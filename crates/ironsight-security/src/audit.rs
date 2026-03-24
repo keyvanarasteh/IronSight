@@ -79,6 +79,12 @@ pub struct SecurityAudit {
     config: SecurityAuditConfig,
 }
 
+impl Default for SecurityAudit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecurityAudit {
     pub fn new() -> Self {
         Self { config: SecurityAuditConfig::default() }
@@ -93,15 +99,14 @@ impl SecurityAudit {
 
         // 1. Path analysis (works even without exe)
         let path_analysis = crate::path_analysis::analyze_path(exe_path.map(|p| p.as_path()));
-        if path_analysis.is_suspicious {
-            if let Some(ref reason) = path_analysis.reason {
+        if path_analysis.is_suspicious
+            && let Some(ref reason) = path_analysis.reason {
                 flags.push(AuditFlag {
                     name: "SuspiciousPath".into(),
                     severity: 30.0,
                     description: reason.clone(),
                 });
             }
-        }
 
         let (hash, entropy, signature) = if let Some(path) = exe_path {
             if path.exists() {
@@ -125,15 +130,14 @@ impl SecurityAudit {
                     }
                 }
 
-                if let Some(ref sig) = s {
-                    if sig.is_signed == Some(false) {
+                if let Some(ref sig) = s
+                    && sig.is_signed == Some(false) {
                         flags.push(AuditFlag {
                             name: "UnsignedBinary".into(),
                             severity: 20.0,
                             description: "Unsigned binary".into(),
                         });
                     }
-                }
 
                 (h, e, s)
             } else {

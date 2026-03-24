@@ -2398,6 +2398,8 @@ dependencies = [
 name = "ironsight-memory"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "chrono",
  "ironsight-core",
  "regex",
  "serde",
@@ -2443,6 +2445,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "ironsight-core",
+ "ironsight-memory",
  "nix",
  "parking_lot",
  "regex",

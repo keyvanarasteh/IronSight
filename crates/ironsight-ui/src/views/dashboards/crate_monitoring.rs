@@ -6,21 +6,17 @@ struct ScanHit { offset: &'static str, pattern: &'static str, context: &'static 
 
 #[component]
 pub fn CrateMonitoring() -> Element {
-    let regions = vec![
-        MemRegion { address: "0x00400000", size: "64 KB", perms: "r-x", usage: 85.0 },
+    let regions = [MemRegion { address: "0x00400000", size: "64 KB", perms: "r-x", usage: 85.0 },
         MemRegion { address: "0x00600000", size: "4 KB", perms: "rw-", usage: 32.0 },
         MemRegion { address: "0x7f000000", size: "1.2 MB", perms: "r--", usage: 60.0 },
         MemRegion { address: "0x7fff0000", size: "132 KB", perms: "rwx", usage: 95.0 },
         MemRegion { address: "0x55500000", size: "256 KB", perms: "r-x", usage: 45.0 },
-        MemRegion { address: "0xdeadbeef", size: "8 KB", perms: "rw-", usage: 78.0 },
-    ];
-    let scan_hits = vec![
-        ScanHit { offset: "0x0042F100", pattern: "MZ\\x90\\x00", context: "PE Header — possible injected module", severity: "critical" },
+        MemRegion { address: "0xdeadbeef", size: "8 KB", perms: "rw-", usage: 78.0 }];
+    let scan_hits = [ScanHit { offset: "0x0042F100", pattern: "MZ\\x90\\x00", context: "PE Header — possible injected module", severity: "critical" },
         ScanHit { offset: "0x0043A280", pattern: "cmd.exe /c", context: "Shell command in heap buffer", severity: "high" },
         ScanHit { offset: "0x004500C0", pattern: "VirtualAlloc", context: "API import — runtime code loading", severity: "medium" },
         ScanHit { offset: "0x00462000", pattern: "CONNECT %s", context: "C2 beacon pattern detected", severity: "critical" },
-        ScanHit { offset: "0x00470FF0", pattern: "\\x55\\x8B\\xEC", context: "Function prologue — packed code", severity: "high" },
-    ];
+        ScanHit { offset: "0x00470FF0", pattern: "\\x55\\x8B\\xEC", context: "Function prologue — packed code", severity: "high" }];
 
     rsx! {
         div { class: "app-container dash-page",

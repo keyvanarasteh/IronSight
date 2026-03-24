@@ -11,7 +11,7 @@ pub fn QsButton(
     #[props(default = false)] icon_only: bool,
     #[props(default)] onclick: EventHandler<MouseEvent>,
 ) -> Element {
-    let (bg, fg, hover) = match variant.as_str() {
+    let (bg, fg, _hover) = match variant.as_str() {
         "secondary" => ("var(--qs-button-secondary-bg, var(--qs-muted))", "var(--qs-button-secondary-fg, var(--qs-fg))", "var(--qs-button-secondary-hover, var(--qs-muted))"),
         "danger" => ("var(--qs-destructive)", "var(--qs-destructive-fg, #fff)", "var(--qs-destructive)"),
         "ghost" => ("transparent", "var(--qs-fg)", "var(--qs-muted)"),

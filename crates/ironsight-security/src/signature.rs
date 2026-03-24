@@ -54,25 +54,65 @@ pub fn verify_signature(path: &Path) -> SignatureResult {
 
     #[cfg(target_os = "windows")]
     {
-        // TODO: Implement Authenticode verification via cross-authenticode crate
+        // Simple Authenticode verification fallback using osslsigncode or signtool
+        let verify = std::process::Command::new("osslsigncode")
+            .args(["verify", "-in", &path.to_string_lossy()])
+            .output();
+
+        let (verified, signer) = match verify {
+            Ok(out) if out.status.success() => {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                let signer = stdout.lines()
+                    .find(|l| l.contains("Signer Certificate:"))
+                    .map(|l| l.replace("Signer Certificate:", "").trim().to_string());
+                (Some(true), signer)
+            },
+            Ok(_) => (Some(false), None),
+            _ => (None, None),
+        };
+
         SignatureResult {
-            is_signed: None,
-            signer: None,
-            verified: None,
-            method: "authenticode".to_string(),
-            platform_note: "Windows: Authenticode verification not yet implemented".into(),
+            is_signed: verified,
+            signer,
+            verified,
+            method: "osslsigncode-verify".to_string(),
+            platform_note: "Windows: Authenticode verification via osslsigncode".into(),
         }
     }
 
     #[cfg(target_os = "macos")]
     {
-        // TODO: Check codesign via command-line invocation
+        let verify = std::process::Command::new("codesign")
+            .args(["-v", "--strict", &path.to_string_lossy()])
+            .output();
+        
+        // Output from codesign goes to stderr
+        let verified = match verify {
+            Ok(out) => out.status.success(),
+            _ => false,
+        };
+
+        let details = std::process::Command::new("codesign")
+            .args(["-dvv", &path.to_string_lossy()])
+            .output();
+
+        let mut signer = None;
+        if let Ok(out) = details {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            for line in stderr.lines() {
+                if line.starts_with("Authority=") {
+                    signer = Some(line.replace("Authority=", "").trim().to_string());
+                    break;
+                }
+            }
+        }
+
         SignatureResult {
-            is_signed: None,
-            signer: None,
-            verified: None,
+            is_signed: Some(signer.is_some()),
+            signer,
+            verified: Some(verified),
             method: "codesign".to_string(),
-            platform_note: "macOS: Code signing verification not yet implemented".into(),
+            platform_note: "macOS: Code signing verification".into(),
         }
     }
 

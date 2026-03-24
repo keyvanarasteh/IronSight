@@ -85,3 +85,4 @@ html[data-theme="light"] {
     background: transparent;
   }
 }
+/* Screen-reader only text */\n.sr-only {\n  position: absolute;\n  overflow: hidden;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  border: 0;\n  margin: -1px;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}

@@ -177,8 +177,8 @@ impl ResponseHandler {
             }
         }
 
-        if let Some(path) = &self.audit_log_path {
-            if let Ok(json) = serde_json::to_string(&log) {
+        if let Some(path) = &self.audit_log_path
+            && let Ok(json) = serde_json::to_string(&log) {
                 use std::io::Write;
                 if let Ok(mut file) = std::fs::OpenOptions::new()
                     .create(true)
@@ -188,7 +188,6 @@ impl ResponseHandler {
                     let _ = writeln!(file, "{}", json);
                 }
             }
-        }
 
         log
     }

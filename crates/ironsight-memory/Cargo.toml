@@ -13,3 +13,5 @@ regex.workspace = true
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 tracing.workspace = true
 thiserror.workspace = true
+anyhow.workspace = true
+chrono.workspace = true

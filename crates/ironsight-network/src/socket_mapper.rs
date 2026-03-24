@@ -147,11 +147,10 @@ impl SocketMapper {
                 if let Ok(link) = std::fs::read_link(fd_entry.path()) {
                     let link_str = link.to_string_lossy().to_string();
                     // socket:[12345]
-                    if let Some(inode_str) = link_str.strip_prefix("socket:[").and_then(|s| s.strip_suffix(']')) {
-                        if let Ok(inode) = inode_str.parse::<u64>() {
+                    if let Some(inode_str) = link_str.strip_prefix("socket:[").and_then(|s| s.strip_suffix(']'))
+                        && let Ok(inode) = inode_str.parse::<u64>() {
                             map.insert(inode, pid);
                         }
-                    }
                 }
             }
         }

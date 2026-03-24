@@ -1,15 +1,3 @@
-/* TODO: abstract as Utilitiy class */
-.sr-only {
-  position: absolute;
-  overflow: hidden;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  border: 0;
-  margin: -1px;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 :root {
   --sidebar-background: var(--primary-color-2);
@@ -794,3 +782,4 @@
   opacity: 0;
   pointer-events: none;
 }
+\n:root {\n  --sidebar-width: 16rem;\n  --sidebar-width-mobile: 18rem;\n  --sidebar-width-icon: 3rem;\n}

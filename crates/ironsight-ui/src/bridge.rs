@@ -66,11 +66,10 @@ pub fn run_scan() -> UiSnapshot {
         if let Some(ref exe_path) = proc_info.exe {
             let path = std::path::Path::new(exe_path);
 
-            if let Ok(result) = ironsight_security::entropy::compute_entropy(path) {
-                if result.entropy > 7.0 {
+            if let Ok(result) = ironsight_security::entropy::compute_entropy(path)
+                && result.entropy > 7.0 {
                     sigs.push(signals::high_entropy(result.entropy));
                 }
-            }
 
             let sig_result = ironsight_security::signature::verify_signature(path);
             if sig_result.is_signed == Some(false) {

@@ -20,9 +20,9 @@ pub fn StatusCodeBadge(
     code: u16,
     #[props(default = false)] active: bool,
 ) -> Element {
-    let cls = if code >= 200 && code < 300 { "qs-status qs-status-2xx" }
-        else if code >= 300 && code < 400 { "qs-status qs-status-3xx" }
-        else if code >= 400 && code < 500 { "qs-status qs-status-4xx" }
+    let cls = if (200..300).contains(&code) { "qs-status qs-status-2xx" }
+        else if (300..400).contains(&code) { "qs-status qs-status-3xx" }
+        else if (400..500).contains(&code) { "qs-status qs-status-4xx" }
         else { "qs-status qs-status-5xx" };
     let active_cls = if active { "active" } else { "" };
     rsx! { span { class: "{cls} {active_cls}", "{code}" } }

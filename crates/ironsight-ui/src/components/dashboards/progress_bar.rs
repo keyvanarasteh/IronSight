@@ -9,7 +9,7 @@ pub fn DashProgress(
     #[props(default = "default".to_string())] variant: String,
     #[props(default = 100.0)] max: f64,
 ) -> Element {
-    let pct = ((value / max) * 100.0).min(100.0).max(0.0);
+    let percentage = ((value / max) * 100.0).clamp(0.0, 100.0);
 
     let bar_color = match variant.as_str() {
         "critical" | "danger" => "linear-gradient(90deg, var(--accent-red), var(--accent-orange))",
@@ -20,7 +20,7 @@ pub fn DashProgress(
     };
 
     let display_val = if value_text.is_empty() {
-        format!("{:.0}%", pct)
+        format!("{:.0}%", percentage)
     } else {
         value_text.clone()
     };
@@ -42,7 +42,7 @@ pub fn DashProgress(
             div {
                 style: "width: 100%; height: 6px; background: var(--bg-hover); border-radius: 3px; overflow: hidden;",
                 div {
-                    style: "width: {pct}%; height: 100%; background: {bar_color}; border-radius: 3px; transition: width 0.8s ease;",
+                    style: "width: {percentage}%; height: 100%; background: {bar_color}; border-radius: 3px; transition: width 0.8s ease;",
                 }
             }
         }
@@ -55,10 +55,10 @@ pub fn ScoreBar(
     score: f64,
     #[props(default = 100.0)] max: f64,
 ) -> Element {
-    let pct = ((score / max) * 100.0).min(100.0).max(0.0);
-    let color = if pct > 70.0 {
+    let percentage = ((score / max) * 100.0).clamp(0.0, 100.0);
+    let color = if percentage > 70.0 {
         "var(--accent-red)"
-    } else if pct > 40.0 {
+    } else if percentage > 40.0 {
         "var(--accent-orange)"
     } else {
         "var(--accent-blue)"

@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 use crate::dns::{AsyncDnsResolver, DnsEntry, PortIntel, port_intel};
 use crate::socket_mapper::{self, SocketInfo, SocketMapper};
@@ -87,7 +87,7 @@ impl ConnectionTimeline {
         self.snapshots.push_back((Utc::now(), entries));
     }
 
-    pub fn new_connections_since(&self, since: DateTime<Utc>) -> Vec<SocketInfo> {
+    pub fn new_connections_since(&self, _since: DateTime<Utc>) -> Vec<SocketInfo> {
         let mut new_conns: Vec<SocketInfo> = Vec::new();
         // Return connections present in newer snapshots but excluded in older ones
         // Simplified mockup implementation for tracking purposes.

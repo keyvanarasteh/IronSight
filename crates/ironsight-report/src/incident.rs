@@ -70,7 +70,9 @@ pub struct ProcessInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default)]
 pub enum ThreatLevel {
+    #[default]
     Clean,
     Low,
     Medium,
@@ -78,12 +80,11 @@ pub enum ThreatLevel {
     Critical,
 }
 
-impl Default for ThreatLevel {
-    fn default() -> Self { Self::Clean }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Default)]
 pub enum RecommendedAction {
+    #[default]
     None,
     Log,
     Monitor,
@@ -91,9 +92,6 @@ pub enum RecommendedAction {
     SuspendDumpKill,
 }
 
-impl Default for RecommendedAction {
-    fn default() -> Self { Self::None }
-}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ThreatInfo {

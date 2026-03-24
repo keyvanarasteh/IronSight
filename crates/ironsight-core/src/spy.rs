@@ -269,7 +269,7 @@ impl ProcessSpy {
                     .map(|s| s.to_string_lossy().into_owned())
                     .collect()
             })
-            .ok_or_else(|| SuiteError::ProcessNotFound(pid))
+            .ok_or(SuiteError::ProcessNotFound(pid))
     }
 
     /// Count open file descriptors for a process (Linux /proc only).

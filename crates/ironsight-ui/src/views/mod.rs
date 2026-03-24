@@ -23,7 +23,6 @@ pub use alerts::*;
 pub use settings::*;
 pub use docs::*;
 pub use showcase::*;
-pub use course_layout::*;
 pub use course_pages::*;
 pub use dashboards::*;
 pub use threats::*;

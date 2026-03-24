@@ -5,14 +5,12 @@ struct HeuristicSignal { pid: u32, name: &'static str, score: f64, entropy: f64,
 
 #[component]
 pub fn HeuristicMonitor() -> Element {
-    let signals = vec![
-        HeuristicSignal { pid: 9901, name: "unknown_agent", score: 88.5, entropy: 7.9, signed: false, wx_violations: 4, level: "critical" },
+    let signals = [HeuristicSignal { pid: 9901, name: "unknown_agent", score: 88.5, entropy: 7.9, signed: false, wx_violations: 4, level: "critical" },
         HeuristicSignal { pid: 8812, name: "svchost.exe", score: 45.2, entropy: 6.8, signed: false, wx_violations: 1, level: "high" },
         HeuristicSignal { pid: 4492, name: "chrome.exe", score: 12.0, entropy: 5.1, signed: true, wx_violations: 0, level: "low" },
         HeuristicSignal { pid: 1204, name: "systemd", score: 5.0, entropy: 4.2, signed: true, wx_violations: 0, level: "low" },
         HeuristicSignal { pid: 3310, name: "temp_installer", score: 62.0, entropy: 7.2, signed: false, wx_violations: 2, level: "high" },
-        HeuristicSignal { pid: 7700, name: "hidden_miner", score: 92.0, entropy: 7.8, signed: false, wx_violations: 3, level: "critical" },
-    ];
+        HeuristicSignal { pid: 7700, name: "hidden_miner", score: 92.0, entropy: 7.8, signed: false, wx_violations: 3, level: "critical" }];
 
     rsx! {
         div { class: "app-container dash-page",

@@ -5,13 +5,11 @@ struct Incident { id: &'static str, title: &'static str, severity: &'static str,
 
 #[component]
 pub fn IncidentReporting() -> Element {
-    let incidents = vec![
-        Incident { id: "INC-001", title: "Malicious Process Injection", severity: "critical", status: "Active", timestamp: "2024-01-15 10:04:22", assignee: "SOC-1", pid: 9901, description: "Memory injection via VirtualAllocEx detected in PID 9901." },
+    let incidents = [Incident { id: "INC-001", title: "Malicious Process Injection", severity: "critical", status: "Active", timestamp: "2024-01-15 10:04:22", assignee: "SOC-1", pid: 9901, description: "Memory injection via VirtualAllocEx detected in PID 9901." },
         Incident { id: "INC-002", title: "Unsigned Binary Execution", severity: "high", status: "Active", timestamp: "2024-01-15 10:05:01", assignee: "SOC-2", pid: 8812, description: "Unsigned binary svchost.exe launched from non-standard path." },
         Incident { id: "INC-003", title: "Suspicious Network Callback", severity: "high", status: "Investigating", timestamp: "2024-01-15 09:58:30", assignee: "SOC-1", pid: 9901, description: "Outbound connection to suspicious external IP 45.12.33.1 on port 80." },
         Incident { id: "INC-004", title: "Excessive CPU Utilization", severity: "medium", status: "Resolved", timestamp: "2024-01-15 09:45:00", assignee: "SOC-3", pid: 3310, description: "Process temp_installer consuming 95% CPU. Possible cryptominer." },
-        Incident { id: "INC-005", title: "Kernel Audit Log Anomaly", severity: "low", status: "Closed", timestamp: "2024-01-15 08:30:15", assignee: "SOC-2", pid: 1, description: "Unusual mprotect syscalls from PID 1. Likely benign." },
-    ];
+        Incident { id: "INC-005", title: "Kernel Audit Log Anomaly", severity: "low", status: "Closed", timestamp: "2024-01-15 08:30:15", assignee: "SOC-2", pid: 1, description: "Unusual mprotect syscalls from PID 1. Likely benign." }];
 
     rsx! {
         div { class: "app-container dash-page",

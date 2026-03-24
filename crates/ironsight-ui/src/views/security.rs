@@ -21,7 +21,7 @@ pub fn Security() -> Element {
                         div { style: "display: flex; align-items: flex-end; gap: 3px; height: 100px;",
                             for (range, count, color) in [("0-1", 5, "#10b981"), ("1-2", 12, "#10b981"), ("2-3", 25, "#10b981"), ("3-4", 45, "#10b981"), ("4-5", 82, "#10b981"), ("5-6", 120, "#f59e0b"), ("6-7", 35, "#f59e0b"), ("7-7.5", 8, "#f97316"), ("7.5+", 3, "#ef4444")] {
                                 {
-                                    let h = (count as f64 / 120.0 * 90.0).min(90.0).max(4.0);
+                                    let h = (count as f64 / 120.0 * 90.0).clamp(4.0, 90.0);
                                     rsx! {
                                         div { style: "flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;",
                                             div { style: "width: 100%; height: {h}px; background: {color}; border-radius: 3px 3px 0 0; min-width: 12px;" }

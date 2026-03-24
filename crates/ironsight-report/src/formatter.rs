@@ -24,7 +24,7 @@ pub fn to_text(report: &IncidentReport) -> String {
     out.push_str(&format!("  Report ID:  {}\n", report.id));
     out.push_str(&format!("  Timestamp:  {}\n", report.timestamp));
     out.push_str(&format!("  Hostname:   {}\n", report.hostname));
-    out.push_str("\n");
+    out.push('\n');
 
     // Process
     out.push_str("── Process ─────────────────────────────────────────────────────\n");
@@ -41,7 +41,7 @@ pub fn to_text(report: &IncidentReport) -> String {
         "  Memory:     {} MiB\n",
         report.process.memory_bytes / (1024 * 1024)
     ));
-    out.push_str("\n");
+    out.push('\n');
 
     // Threat
     let level_emoji = match report.threat.level {
@@ -73,7 +73,7 @@ pub fn to_text(report: &IncidentReport) -> String {
             }
         }
     }
-    out.push_str("\n");
+    out.push('\n');
 
     // Security
     out.push_str("── Security Analysis ───────────────────────────────────────────\n");
@@ -95,7 +95,7 @@ pub fn to_text(report: &IncidentReport) -> String {
     for flag in &report.security.flags {
         out.push_str(&format!("  ⚠ {flag}\n"));
     }
-    out.push_str("\n");
+    out.push('\n');
 
     // Network
     out.push_str("── Network Posture ────────────────────────────────────────────\n");
@@ -114,7 +114,7 @@ pub fn to_text(report: &IncidentReport) -> String {
     for port in &report.network.suspicious_ports {
         out.push_str(&format!("  🔴 {port}\n"));
     }
-    out.push_str("\n");
+    out.push('\n');
 
     // Memory
     out.push_str("── Memory Analysis ────────────────────────────────────────────\n");
@@ -137,7 +137,7 @@ pub fn to_text(report: &IncidentReport) -> String {
     for flag in &report.memory.flags {
         out.push_str(&format!("  ⚠ {flag}\n"));
     }
-    out.push_str("\n");
+    out.push('\n');
 
     // Actions
     if !report.actions.is_empty() {
@@ -149,7 +149,7 @@ pub fn to_text(report: &IncidentReport) -> String {
                 action.action_type, action.message, action.timestamp
             ));
         }
-        out.push_str("\n");
+        out.push('\n');
     }
 
     out.push_str("═══════════════════════════════════════════════════════════════\n");

@@ -25,10 +25,10 @@ use anyhow::Result;
 use clap::Parser;
 use sysinfo::{ProcessRefreshKind, System, UpdateKind};
 use tokio::signal;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 use ironsight_core::ProcessInfo;
-use ironsight_core::snapshot::{ProcessSnapshot, build_snapshot};
+use ironsight_core::snapshot::build_snapshot;
 use ironsight_heuristic::signals;
 use ironsight_heuristic::{DecayEngine, HeuristicEngine, Signal, ThreatLevel};
 use ironsight_report::incident;

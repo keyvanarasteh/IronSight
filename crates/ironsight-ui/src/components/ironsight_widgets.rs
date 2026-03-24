@@ -3,7 +3,7 @@ use ironsight_heuristic::ThreatLevel;
 
 #[component]
 pub fn ThreatGauge(score: f32) -> Element {
-    let percentage = score.min(100.0).max(0.0);
+    let percentage = score.clamp(0.0, 100.0);
     
     let color = if percentage < 30.0 {
         "var(--accent-green)"

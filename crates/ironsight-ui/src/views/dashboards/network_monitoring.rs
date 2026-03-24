@@ -6,19 +6,15 @@ struct Listener { pid: u32, process: &'static str, address: &'static str, port: 
 
 #[component]
 pub fn NetworkMonitoring() -> Element {
-    let connections = vec![
-        NetConnection { pid: 9901, process: "unknown_agent", local: "192.168.1.5:49211", remote: "45.12.33.1:80", state: "ESTABLISHED", proto: "TCP", flagged: true },
+    let connections = [NetConnection { pid: 9901, process: "unknown_agent", local: "192.168.1.5:49211", remote: "45.12.33.1:80", state: "ESTABLISHED", proto: "TCP", flagged: true },
         NetConnection { pid: 4492, process: "chrome.exe", local: "192.168.1.5:55201", remote: "142.250.190.46:443", state: "ESTABLISHED", proto: "TCP", flagged: false },
         NetConnection { pid: 8812, process: "svchost.exe", local: "192.168.1.5:61500", remote: "13.107.4.52:443", state: "ESTABLISHED", proto: "TCP", flagged: false },
         NetConnection { pid: 9901, process: "unknown_agent", local: "192.168.1.5:49500", remote: "185.234.72.10:4444", state: "ESTABLISHED", proto: "TCP", flagged: true },
-        NetConnection { pid: 3310, process: "curl", local: "192.168.1.5:55800", remote: "104.21.32.100:443", state: "TIME_WAIT", proto: "TCP", flagged: false },
-    ];
-    let listeners = vec![
-        Listener { pid: 22, process: "sshd", address: "0.0.0.0", port: 22, proto: "TCP", known: true },
+        NetConnection { pid: 3310, process: "curl", local: "192.168.1.5:55800", remote: "104.21.32.100:443", state: "TIME_WAIT", proto: "TCP", flagged: false }];
+    let listeners = [Listener { pid: 22, process: "sshd", address: "0.0.0.0", port: 22, proto: "TCP", known: true },
         Listener { pid: 80, process: "nginx", address: "0.0.0.0", port: 80, proto: "TCP", known: true },
         Listener { pid: 8812, process: "svchost", address: "0.0.0.0", port: 135, proto: "TCP", known: true },
-        Listener { pid: 9901, process: "unknown_agent", address: "0.0.0.0", port: 31337, proto: "TCP", known: false },
-    ];
+        Listener { pid: 9901, process: "unknown_agent", address: "0.0.0.0", port: 31337, proto: "TCP", known: false }];
 
     rsx! {
         div { class: "app-container dash-page",

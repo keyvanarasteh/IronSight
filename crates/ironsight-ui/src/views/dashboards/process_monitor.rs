@@ -47,7 +47,7 @@ pub fn ProcessMonitor() -> Element {
                                         span { "{p.2}%" }
                                         div { style: "width: 50px; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden;",
                                             div { style: format!("height:100%; width:{}%; border-radius:2px; background:{};",
-                                                (p.2 as f64).min(100.0),
+                                                p.2.min(100.0),
                                                 if p.2 > 10.0 { "var(--accent-red)" } else { "var(--accent-blue)" }
                                             ) }
                                         }

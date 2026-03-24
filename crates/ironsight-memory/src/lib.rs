@@ -6,7 +6,9 @@
 pub mod maps;
 pub mod scanner;
 pub mod watcher;
+pub mod dump;
 
 pub use maps::{MemoryRegion, MemorySummary, Permissions};
 pub use scanner::{PatternMatch, ScanResult, SuspiciousPatterns, entropy};
 pub use watcher::MemoryChange;
+pub use dump::dump_memory;

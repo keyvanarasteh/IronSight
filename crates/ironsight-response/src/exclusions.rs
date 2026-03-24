@@ -99,11 +99,10 @@ impl ExclusionList {
         if self.name_patterns.iter().any(|re| re.is_match(name)) {
             return true;
         }
-        if let Some(p) = path {
-            if self.path_prefixes.iter().any(|prefix| p.starts_with(prefix)) {
+        if let Some(p) = path
+            && self.path_prefixes.iter().any(|prefix| p.starts_with(prefix)) {
                 return true;
             }
-        }
         false
     }
 

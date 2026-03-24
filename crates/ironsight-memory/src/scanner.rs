@@ -188,12 +188,11 @@ pub fn scan_process(pid: u32) -> ScanResult {
         }
 
         // Skip [vdso], [vsyscall], [vvar]
-        if let Some(ref name) = region.pathname {
-            if name.starts_with("[v") {
+        if let Some(ref name) = region.pathname
+            && name.starts_with("[v") {
                 result.regions_skipped += 1;
                 continue;
             }
-        }
 
         if file.seek(SeekFrom::Start(region.start)).is_err() {
             result.regions_skipped += 1;

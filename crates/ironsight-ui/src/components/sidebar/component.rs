@@ -11,9 +11,7 @@ use dioxus_primitives::merge_attributes;
 use dioxus_primitives::use_controlled;
 
 // constants
-const SIDEBAR_WIDTH: &str = "16rem";
-const SIDEBAR_WIDTH_MOBILE: &str = "18rem";
-const SIDEBAR_WIDTH_ICON: &str = "3rem";
+
 const SIDEBAR_KEYBOARD_SHORTCUT: &str = "b";
 const MOBILE_BREAKPOINT: u32 = 768;
 
@@ -49,23 +47,7 @@ impl SidebarSide {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub enum SidebarVariant {
-    #[default]
-    Sidebar,
-    Floating,
-    Inset,
-}
 
-impl SidebarVariant {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SidebarVariant::Sidebar => "sidebar",
-            SidebarVariant::Floating => "floating",
-            SidebarVariant::Inset => "inset",
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum SidebarCollapsible {
@@ -230,18 +212,9 @@ pub fn SidebarProvider(
         );
     });
 
-    let sidebar_style = format!(
-        r#"
-        --sidebar-width: {SIDEBAR_WIDTH};
-        --sidebar-width-mobile: {SIDEBAR_WIDTH_MOBILE};
-        --sidebar-width-icon: {SIDEBAR_WIDTH_ICON}
-        "#
-    );
-
     let base = attributes!(div {
         class: "sidebar-wrapper",
         "data-slot": "sidebar-wrapper",
-        style: sidebar_style,
     });
     let merged = merge_attributes(vec![base, attributes]);
 
@@ -254,7 +227,6 @@ pub fn SidebarProvider(
 #[component]
 pub fn Sidebar(
     #[props(default)] side: SidebarSide,
-    #[props(default)] variant: SidebarVariant,
     #[props(default)] collapsible: SidebarCollapsible,
     #[props(extends = GlobalAttributes)] attributes: Vec<Attribute>,
     children: Element,
@@ -324,7 +296,7 @@ pub fn Sidebar(
             class: "sidebar-desktop",
             "data-state": state().as_str(),
             "data-collapsible": collapsible_str,
-            "data-variant": variant.as_str(),
+            "data-variant": "sidebar",
             "data-side": side.as_str(),
             "data-slot": "sidebar",
             div { class: "sidebar-gap", "data-slot": "sidebar-gap" }
@@ -609,47 +581,13 @@ pub fn SidebarMenuItem(
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-#[allow(dead_code)]
-pub enum SidebarMenuButtonVariant {
-    #[default]
-    Default,
-    Outline,
-}
 
-impl SidebarMenuButtonVariant {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SidebarMenuButtonVariant::Default => "default",
-            SidebarMenuButtonVariant::Outline => "outline",
-        }
-    }
-}
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-#[allow(dead_code)]
-pub enum SidebarMenuButtonSize {
-    #[default]
-    Default,
-    Sm,
-    Lg,
-}
 
-impl SidebarMenuButtonSize {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SidebarMenuButtonSize::Default => "default",
-            SidebarMenuButtonSize::Sm => "sm",
-            SidebarMenuButtonSize::Lg => "lg",
-        }
-    }
-}
 
 #[component]
 pub fn SidebarMenuButton(
     #[props(default = false)] is_active: bool,
-    #[props(default)] variant: SidebarMenuButtonVariant,
-    #[props(default)] size: SidebarMenuButtonSize,
     #[props(extends = GlobalAttributes)] attributes: Vec<Attribute>,
     #[props(default)] tooltip: Option<Element>,
     r#as: Option<Callback<Vec<Attribute>, Element>>,
@@ -663,8 +601,8 @@ pub fn SidebarMenuButton(
         class: "sidebar-menu-button",
         "data-slot": "sidebar-menu-button",
         "data-sidebar": "menu-button",
-        "data-size": size.as_str(),
-        "data-variant": variant.as_str(),
+        "data-size": "default",
+        "data-variant": "default",
         "data-active": if is_active { "true" } else { "false" },
     });
     let merged = merge_attributes(vec![base, attributes]);

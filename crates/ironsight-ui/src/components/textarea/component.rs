@@ -7,7 +7,6 @@ pub enum TextareaVariant {
     Default,
     Fade,
     Outline,
-    Ghost,
 }
 
 impl TextareaVariant {

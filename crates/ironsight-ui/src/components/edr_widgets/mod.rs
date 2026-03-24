@@ -11,5 +11,4 @@ pub use signal_chip::*;
 pub use memory_map_bar::*;
 pub use event_stream::*;
 pub use config_slider::*;
-pub use action_button::*;
 pub use topology_graph::*;

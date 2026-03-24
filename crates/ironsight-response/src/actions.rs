@@ -115,119 +115,27 @@ pub fn kill_process(pid: u32) -> ActionResult {
 /// Dump process memory to a file for forensic analysis.
 #[cfg(target_os = "linux")]
 pub fn dump_memory(pid: u32, output_dir: &str) -> ActionResult {
-    use std::io::{Read, Seek, SeekFrom, Write};
-
     let now = timestamp_now();
-    let maps_path = format!("/proc/{pid}/maps");
-    let mem_path = format!("/proc/{pid}/mem");
-    let dump_path = format!("{output_dir}/memdump_{pid}_{}.bin", now.replace(':', "-"));
-
-    // Read maps to know which regions to dump
-    let maps_content = match std::fs::read_to_string(&maps_path) {
-        Ok(c) => c,
-        Err(e) => {
-            return ActionResult {
-                pid,
-                action: ActionType::MemoryDump,
-                success: false,
-                message: format!("Cannot read /proc/{pid}/maps: {e}"),
-                timestamp: now,
-            };
-        }
-    };
-
-    let mut mem_file = match std::fs::File::open(&mem_path) {
-        Ok(f) => f,
-        Err(e) => {
-            return ActionResult {
-                pid,
-                action: ActionType::MemoryDump,
-                success: false,
-                message: format!("Cannot open /proc/{pid}/mem: {e}"),
-                timestamp: now,
-            };
-        }
-    };
-
-    // Create output directory if needed with strict permissions
-    if let Err(e) = ensure_dump_dir(std::path::Path::new(output_dir)) {
-        return ActionResult {
+    let out_path = std::path::Path::new(output_dir);
+    
+    match ironsight_memory::dump_memory(pid, out_path) {
+        Ok((dump_path, regions_dumped, total_bytes)) => ActionResult {
+            pid,
+            action: ActionType::MemoryDump,
+            success: true,
+            message: format!(
+                "Dumped {regions_dumped} regions ({} bytes) to {}",
+                total_bytes, dump_path.display()
+            ),
+            timestamp: now,
+        },
+        Err(e) => ActionResult {
             pid,
             action: ActionType::MemoryDump,
             success: false,
-            message: format!("Cannot create secure dump directory: {e}"),
+            message: format!("Failed to dump memory: {e}"),
             timestamp: now,
-        };
-    }
-
-    let mut output = match std::fs::File::create(&dump_path) {
-        Ok(f) => f,
-        Err(e) => {
-            return ActionResult {
-                pid,
-                action: ActionType::MemoryDump,
-                success: false,
-                message: format!("Cannot create dump file: {e}"),
-                timestamp: now,
-            };
         }
-    };
-
-    let mut total_bytes: u64 = 0;
-    let mut regions_dumped = 0u32;
-
-    for line in maps_content.lines() {
-        let parts: Vec<&str> = line.splitn(6, char::is_whitespace).collect();
-        if parts.len() < 2 {
-            continue;
-        }
-
-        // Only dump readable regions
-        if !parts[1].starts_with('r') {
-            continue;
-        }
-
-        let addrs: Vec<&str> = parts[0].split('-').collect();
-        if addrs.len() != 2 {
-            continue;
-        }
-
-        let start = u64::from_str_radix(addrs[0], 16).unwrap_or(0);
-        let end = u64::from_str_radix(addrs[1], 16).unwrap_or(0);
-        let size = end - start;
-
-        // Skip very large regions (>32 MiB)
-        if size > 32 * 1024 * 1024 {
-            continue;
-        }
-
-        if mem_file.seek(SeekFrom::Start(start)).is_err() {
-            continue;
-        }
-
-        const MAX_TOTAL_DUMP_SIZE: u64 = 256 * 1024 * 1024; // 256 MiB
-        if total_bytes + size > MAX_TOTAL_DUMP_SIZE {
-            tracing::warn!("Dump size limit reached ({} MiB), stopping", MAX_TOTAL_DUMP_SIZE / (1024*1024));
-            break;
-        }
-
-        let mut buf = vec![0u8; size as usize];
-        if mem_file.read_exact(&mut buf).is_ok() {
-            let _ = output.write_all(&buf);
-            total_bytes += size;
-            regions_dumped += 1;
-        }
-    }
-
-    ActionResult {
-        pid,
-        action: ActionType::MemoryDump,
-        success: true,
-        message: format!(
-            "Dumped {regions_dumped} regions ({} bytes) to {dump_path}",
-            total_bytes
-        ),
-        timestamp: now,
     }
 }
 
@@ -295,15 +203,4 @@ pub fn verify_process_exists(_pid: u32) -> bool {
     true
 }
 
-#[cfg(target_os = "linux")]
-fn ensure_dump_dir(path: &std::path::Path) -> std::io::Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::create_dir_all(path)?;
-    let perms = std::fs::Permissions::from_mode(0o700);
-    std::fs::set_permissions(path, perms)?;
-    let meta = std::fs::metadata(path)?;
-    if std::os::unix::fs::MetadataExt::uid(&meta) != 0 {
-        tracing::warn!("Dump directory not owned by root: {}", path.display());
-    }
-    Ok(())
-}
+
