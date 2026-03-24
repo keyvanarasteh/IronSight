@@ -1,13 +1,4 @@
 
-:root {
-  --sidebar-background: var(--primary-color-2);
-  --sidebar-foreground: var(--secondary-color-4);
-  --sidebar-border: var(--primary-color-6);
-  --sidebar-accent: var(--primary-color-4);
-  --sidebar-accent-foreground: var(--secondary-color-4);
-  --sidebar-ring: var(--primary-color-7);
-}
-
 .sidebar-wrapper {
   display: flex;
   overflow: hidden;
@@ -782,4 +773,9 @@
   opacity: 0;
   pointer-events: none;
 }
-\n:root {\n  --sidebar-width: 16rem;\n  --sidebar-width-mobile: 18rem;\n  --sidebar-width-icon: 3rem;\n}
+
+:root {
+  --sidebar-width: 16rem;
+  --sidebar-width-mobile: 18rem;
+  --sidebar-width-icon: 3rem;
+}

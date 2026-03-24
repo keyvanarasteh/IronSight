@@ -14,3 +14,6 @@ hex.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
 glob-match = "0.2.1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+cross-authenticode = "1.0.1"

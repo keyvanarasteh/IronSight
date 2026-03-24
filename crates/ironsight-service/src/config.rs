@@ -13,6 +13,7 @@ const CONFIG_PATHS: &[&str] = &[
 /// Root configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+#[derive(Default)]
 pub struct Config {
     pub general: GeneralConfig,
     pub scan: ScanConfig,
@@ -87,18 +88,6 @@ pub struct WatchdogConfig {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            scan: ScanConfig::default(),
-            thresholds: ThresholdConfig::default(),
-            exclusions: ExclusionConfig::default(),
-            report: ReportConfig::default(),
-            watchdog: WatchdogConfig::default(),
-        }
-    }
-}
 
 impl Default for GeneralConfig {
     fn default() -> Self {
@@ -194,11 +183,10 @@ impl Config {
 
 /// Minimal ~ expansion.
 fn shellexpand(path: &str) -> String {
-    if let Some(rest) = path.strip_prefix("~/") {
-        if let Ok(home) = std::env::var("HOME") {
+    if let Some(rest) = path.strip_prefix("~/")
+        && let Ok(home) = std::env::var("HOME") {
             return format!("{home}/{rest}");
         }
-    }
     path.to_string()
 }
 

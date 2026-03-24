@@ -15,3 +15,6 @@ tracing.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 chrono.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+minidump-writer = "0.8"

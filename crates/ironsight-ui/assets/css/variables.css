@@ -10,6 +10,14 @@
     --text-muted: #6c6c6c;
     --shadow-card: none; /* VSCode is very flat */
 
+    /* ── Sidebar Variables ── */
+    --sidebar-background: var(--primary-color-2);
+    --sidebar-foreground: var(--secondary-color-4);
+    --sidebar-border: var(--primary-color-6);
+    --sidebar-accent: var(--primary-color-4);
+    --sidebar-accent-foreground: var(--secondary-color-4);
+    --sidebar-ring: var(--primary-color-7);
+
     /* Accent colors (shared across themes) */
     --accent-green: #89d185;
     --accent-red: #f14c4c;

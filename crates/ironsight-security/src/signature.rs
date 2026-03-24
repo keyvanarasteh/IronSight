@@ -54,29 +54,37 @@ pub fn verify_signature(path: &Path) -> SignatureResult {
 
     #[cfg(target_os = "windows")]
     {
-        // Simple Authenticode verification fallback using osslsigncode or signtool
-        let verify = std::process::Command::new("osslsigncode")
-            .args(["verify", "-in", &path.to_string_lossy()])
-            .output();
+        let mut is_signed = None;
+        let mut signer = None;
+        let mut verified = None;
+        let mut platform_note = "Windows: Authenticode verification via cross-authenticode".to_string();
 
-        let (verified, signer) = match verify {
-            Ok(out) if out.status.success() => {
-                let stdout = String::from_utf8_lossy(&out.stdout);
-                let signer = stdout.lines()
-                    .find(|l| l.contains("Signer Certificate:"))
-                    .map(|l| l.replace("Signer Certificate:", "").trim().to_string());
-                (Some(true), signer)
-            },
-            Ok(_) => (Some(false), None),
-            _ => (None, None),
-        };
+        if let Ok(file_data) = std::fs::read(path) {
+            use cross_authenticode::AuthenticodeInfo;
+            if let Ok(ai) = AuthenticodeInfo::try_from(file_data.as_slice()) {
+                is_signed = Some(true);
+                // Extracting subject name from the first certificate if available
+                signer = ai.certificates.first()
+                    .map(|cert| cert.subject.clone())
+                    .unwrap_or(None);
+                
+                if let Ok(true) = ai.verify() {
+                    verified = Some(true);
+                } else {
+                    verified = Some(false);
+                }
+            } else {
+                is_signed = Some(false);
+                verified = Some(false);
+            }
+        }
 
         SignatureResult {
-            is_signed: verified,
+            is_signed,
             signer,
             verified,
-            method: "osslsigncode-verify".to_string(),
-            platform_note: "Windows: Authenticode verification via osslsigncode".into(),
+            method: "cross-authenticode".to_string(),
+            platform_note,
         }
     }
 

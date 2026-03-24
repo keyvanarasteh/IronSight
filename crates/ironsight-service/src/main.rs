@@ -322,7 +322,7 @@ async fn scan_process(
     if exclusion_list.is_excluded(
         &proc_info.name,
         proc_info.pid,
-        exe_str.as_deref().map(|s| s.as_ref()),
+        exe_str.as_deref().map(|s| s),
     ) {
         return None;
     }
@@ -424,8 +424,8 @@ async fn scan_process(
     }
 
     // ── Memory Analysis ──
-    if cfg.scan.memory {
-        if let Ok(regions) = ironsight_memory::maps::read_maps(proc_info.pid) {
+    if cfg.scan.memory
+        && let Ok(regions) = ironsight_memory::maps::read_maps(proc_info.pid) {
             let summary = ironsight_memory::maps::summarize(proc_info.pid, &regions);
             report.memory = incident::MemoryInfo {
                 total_regions: summary.total_regions,
@@ -446,14 +446,13 @@ async fn scan_process(
             let pattern_result = ironsight_memory::scanner::scan_process(proc_info.pid);
             for m in &pattern_result.matches {
                 sigs.push(Signal::new(
-                    &format!("memory_pattern at 0x{:x}", m.region_start + m.offset as u64),
+                    &format!("memory_pattern at 0x{:x}", m.region_start + m.offset),
                     ironsight_heuristic::SignalCategory::MemoryAnomaly,
                     20.0,
                     &m.context,
                 ));
             }
         }
-    }
 
     let assessment = engine.assess(proc_info.pid, &proc_info.name, sigs);
     report.threat = incident::ThreatInfo {
@@ -531,8 +530,8 @@ fn display_results(
 
     println!("── Top {top_n} Threats ─────────────────────────────────────────────");
     println!(
-        "  {:<8} {:<20} {:>6} {:<10} {}",
-        "PID", "NAME", "SCORE", "LEVEL", "SIGNALS"
+        "  {:<8} {:<20} {:>6} {:<10} SIGNALS",
+        "PID", "NAME", "SCORE", "LEVEL"
     );
     println!("  {}", "─".repeat(70));
 

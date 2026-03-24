@@ -64,3 +64,14 @@ table.proc tr:hover td { background: var(--bg-hover); }
 [data-theme="light"] .signal-tag { background: rgba(37, 99, 235, 0.08); border-color: rgba(37, 99, 235, 0.2); }
 [data-theme="light"] .btn { box-shadow: var(--shadow-card); }
 [data-theme="light"] .btn:hover { background: var(--bg-hover); }
+
+/* ── Common Icons ── */
+.pagination-icon {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentcolor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
