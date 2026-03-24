@@ -1,0 +1,848 @@
+/*
+ * Qix Theme System — Full VSCode Token Coverage
+ * CSS custom properties for light/dark mode theming.
+ * Every token maps 1:1 to a VSCode Dark/Light Modern color key.
+ *
+ * Usage:
+ *   @import 'qix/theme.css';
+ *   — or —
+ *   import 'qix/theme.css';
+ */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Light Mode (default) ─────────────────────────── */
+:root {
+	--radius: 0.625rem;
+
+	/* Foreground */
+	--foreground: #3b3b3b;
+	--foreground-bright: #1e1e1e;
+	--foreground-muted: #616161;
+	--foreground-subtle: #767676;
+	--description-fg: #3b3b3b;
+	--error-fg: #f85149;
+	--icon-fg: #3b3b3b;
+
+	/* Background */
+	--background: #ffffff;
+	--card: #ffffff;
+	--card-foreground: #3b3b3b;
+	--background-elevated: #f8f8f8;
+	--background-hover: #e8e8e8;
+	--background-selected: #e4e6f1;
+	--background-panel: #f8f8f8;
+
+	/* Primary (accent) */
+	--primary: #005fb8;
+	--primary-hover: #0258a8;
+	--primary-selection: #add6ff80;
+	--primary-foreground: #ffffff;
+
+	/* Secondary */
+	--secondary: #e5e5e5;
+	--secondary-foreground: #3b3b3b;
+
+	/* Muted */
+	--muted: #e8e8e8;
+	--muted-foreground: #6e6e6e;
+
+	/* Accent */
+	--accent: #e4e6f1;
+	--accent-foreground: #1e1e1e;
+
+	/* Semantic states */
+	--success: #2ea043;
+	--success-bg: #dafbe1;
+	--warning: #bf8700;
+	--warning-bg: #fff8c5;
+	--info: #218bff;
+	--info-bg: #ddf4ff;
+
+	/* Destructive */
+	--destructive: #be1100;
+	--destructive-bg: #fce8e6;
+
+	/* Focus */
+	--ring: #005fb8;
+
+	/* Button */
+	--button-bg: #005fb8;
+	--button-fg: #ffffff;
+	--button-border: #0000001a;
+	--button-hover-bg: #0258a8;
+	--button-secondary-bg: #e5e5e5;
+	--button-secondary-fg: #3b3b3b;
+	--button-secondary-hover-bg: #cccccc;
+
+	/* Checkbox */
+	--checkbox-bg: #f8f8f8;
+	--checkbox-border: #cecece;
+
+	/* Input */
+	--input: #ffffff;
+	--input-fg: #3b3b3b;
+	--input-border: #cecece;
+	--input-option-active-bg: #bed6ed;
+	--input-option-active-border: #005fb8;
+	--placeholder: #767676;
+
+	/* Dropdown */
+	--dropdown-bg: #ffffff;
+	--dropdown-fg: #3b3b3b;
+	--dropdown-border: #cecece;
+	--dropdown-list-bg: #ffffff;
+
+	/* Selection & Search */
+	--selection: #add6ff;
+	--find-match: #e8c56e;
+
+	/* Link */
+	--link: #005fb8;
+	--link-active: #005fb8;
+
+	/* Borders */
+	--border: #cecece;
+	--border-subtle: #e5e5e5;
+	--border-row: rgba(0, 0, 0, 0.06);
+	--border-tab: #e5e5e5;
+
+	/* Interactive states */
+	--toggle-active: rgba(0, 120, 212, 0.35);
+	--toggle-border: #005fb8;
+	--hover-overlay: rgba(31, 31, 31, 0.07);
+	--active-overlay: rgba(0, 0, 0, 0.1);
+
+	/* Badge */
+	--badge-bg: #cccccc;
+	--badge-fg: #3b3b3b;
+
+	/* Progress */
+	--progress-bg: #005fb8;
+
+	/* Editor */
+	--editor-group-border: #e5e5e5;
+	--editor-tabs-bg: #f8f8f8;
+	--editor-tabs-border: #e5e5e5;
+	--overview-ruler-border: #e5e5e5;
+
+	/* Line Numbers */
+	--line-number: #6e7681;
+	--line-number-active: #171184;
+
+	/* Widget */
+	--widget-bg: #f8f8f8;
+	--widget-border: #e5e5e5;
+
+	/* Menu */
+	--menu-bg: #ffffff;
+	--menu-fg: #3b3b3b;
+	--menu-selection: #005fb8;
+	--menu-selection-fg: #ffffff;
+	--menu-border: #cecece;
+
+	/* Notification */
+	--notification-bg: #ffffff;
+	--notification-fg: #3b3b3b;
+	--notification-border: #e5e5e5;
+	--notification-header-bg: #ffffff;
+	--notification-header-fg: #3b3b3b;
+
+	/* Panel */
+	--panel-bg: #f8f8f8;
+	--panel-border: #e5e5e5;
+	--panel-input-border: #e5e5e5;
+	--panel-title-active-border: #005fb8;
+	--panel-title-active-fg: #3b3b3b;
+	--panel-title-inactive-fg: #3b3b3b;
+
+	/* Peek View */
+	--peek-editor-bg: #ffffff;
+	--peek-match-bg: #bb800966;
+	--peek-result-bg: #ffffff;
+	--peek-result-match-bg: #bb800966;
+
+	/* Picker */
+	--picker-border: #e5e5e5;
+	--picker-fg: #8b949e;
+
+	/* Quick Input */
+	--quick-input-bg: #f8f8f8;
+	--quick-input-fg: #3b3b3b;
+
+	/* Keybinding */
+	--keybinding-fg: #3b3b3b;
+
+	/* Settings */
+	--settings-dropdown-bg: #ffffff;
+	--settings-dropdown-border: #cecece;
+	--settings-header-fg: #1f1f1f;
+	--settings-modified-indicator: #bb800966;
+
+	/* Debug */
+	--debug-toolbar-bg: #f8f8f8;
+
+	/* Chat */
+	--chat-command-bg: #adceff7a;
+	--chat-command-fg: #26569e;
+	--chat-edited-fg: #895503;
+
+	/* Appearance */
+	--scrollbar: rgba(100, 100, 100, 0.4);
+	--scrollbar-hover: rgba(80, 80, 80, 0.5);
+	--scrollbar-active: rgba(0, 0, 0, 0.6);
+	--shadow: rgba(0, 0, 0, 0.16);
+	--zebra: rgba(0, 0, 0, 0.04);
+	--header-bg: rgba(0, 0, 0, 0.04);
+	--divider: rgb(0 0 0 / 0.15);
+	--indent-guide: rgba(0, 0, 0, 0.1);
+
+	/* Sidebar */
+	--sidebar: #f8f8f8;
+	--sidebar-foreground: #3b3b3b;
+	--sidebar-primary: #005fb8;
+	--sidebar-primary-foreground: #ffffff;
+	--sidebar-accent: #e4e6f1;
+	--sidebar-accent-foreground: #1e1e1e;
+	--sidebar-border: #e5e5e5;
+	--sidebar-ring: #005fb8;
+	--sidebar-section-bg: #f8f8f8;
+	--sidebar-section-border: #e5e5e5;
+	--sidebar-section-fg: #3b3b3b;
+	--sidebar-title-fg: #3b3b3b;
+
+	/* Activity Bar */
+	--activitybar-bg: #f8f8f8;
+	--activitybar-fg: #1f1f1f;
+	--activitybar-inactive-fg: #616161;
+	--activitybar-border: #e5e5e5;
+	--activitybar-active-border: #005fb8;
+	--activitybar-badge-bg: #005fb8;
+	--activitybar-badge-fg: #ffffff;
+
+	/* Title Bar */
+	--titlebar-bg: #f8f8f8;
+	--titlebar-fg: #1e1e1e;
+	--titlebar-border: #e5e5e5;
+	--titlebar-inactive-bg: #f8f8f8;
+	--titlebar-inactive-fg: #8b949e;
+
+	/* Status Bar */
+	--statusbar-bg: #f8f8f8;
+	--statusbar-fg: #3b3b3b;
+	--statusbar-border: #e5e5e5;
+	--statusbar-debug-bg: #fd716c;
+	--statusbar-debug-fg: #000000;
+	--statusbar-focus-border: #005fb8;
+	--statusbar-nofolder-bg: #f8f8f8;
+	--statusbar-item-hover: rgba(31, 31, 31, 0.07);
+	--statusbar-item-hover-fg: #000000;
+	--statusbar-item-focus-border: #005fb8;
+	--statusbar-prominent-bg: #6e768166;
+	--statusbar-remote-bg: #005fb8;
+	--statusbar-remote-fg: #ffffff;
+
+	/* Tabs */
+	--tab-active-bg: #ffffff;
+	--tab-active-fg: #3b3b3b;
+	--tab-active-border: #f8f8f8;
+	--tab-active-border-top: #005fb8;
+	--tab-selected-border-top: #68a3da;
+	--tab-inactive-bg: #f8f8f8;
+	--tab-inactive-fg: #868686;
+	--tab-hover-bg: #ffffff;
+	--tab-unfocused-active-border: #f8f8f8;
+	--tab-unfocused-active-border-top: #e5e5e5;
+	--tab-unfocused-hover-bg: #f8f8f8;
+
+	/* Code & Text */
+	--code-bg: #f8f8f8;
+	--blockquote-bg: #f8f8f8;
+	--blockquote-border: #e5e5e5;
+	--text-preformat: #3b3b3b;
+	--text-preformat-bg: #0000001f;
+	--text-separator: #21262d;
+
+	/* Terminal */
+	--terminal-fg: #3b3b3b;
+	--terminal-tab-active-border: #005fb8;
+
+	/* Git / Diff */
+	--git-added: #2ea043;
+	--git-deleted: #f85149;
+	--git-modified: #005fb8;
+	--diff-inserted-bg: rgba(35, 134, 54, 0.2);
+	--diff-removed-bg: rgba(248, 81, 73, 0.2);
+
+	/* Welcome */
+	--welcome-tile-bg: #f3f3f3;
+	--welcome-progress-fg: #005fb8;
+
+	/* Charts */
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
+}
+
+/* ─── Dark Mode ─────────────────────────────────────── */
+.dark {
+	/* Foreground */
+	--foreground: #cccccc;
+	--foreground-bright: #ffffff;
+	--foreground-muted: #9d9d9d;
+	--foreground-subtle: #989898;
+	--description-fg: #9d9d9d;
+	--error-fg: #f85149;
+	--icon-fg: #cccccc;
+
+	/* Background */
+	--background: #1f1f1f;
+	--card: #1f1f1f;
+	--card-foreground: #cccccc;
+	--background-elevated: #313131;
+	--background-hover: #2a2d2e;
+	--background-selected: #37373d;
+	--background-panel: #181818;
+
+	/* Primary (accent) */
+	--primary: #0078d4;
+	--primary-hover: #026ec1;
+	--primary-selection: #04395e;
+	--primary-foreground: #ffffff;
+
+	/* Secondary */
+	--secondary: #313131;
+	--secondary-foreground: #cccccc;
+
+	/* Muted */
+	--muted: #2a2d2e;
+	--muted-foreground: #9d9d9d;
+
+	/* Accent */
+	--accent: #37373d;
+	--accent-foreground: #ffffff;
+
+	/* Semantic states */
+	--success: #2ea043;
+	--success-bg: #23863633;
+	--warning: #d29922;
+	--warning-bg: #bb800966;
+	--info: #4daafc;
+	--info-bg: #0078d433;
+
+	/* Destructive */
+	--destructive: #f85149;
+	--destructive-bg: #5a1d1d;
+
+	/* Focus */
+	--ring: #0078d4;
+
+	/* Button */
+	--button-bg: #0078d4;
+	--button-fg: #ffffff;
+	--button-border: #ffffff1a;
+	--button-hover-bg: #026ec1;
+	--button-secondary-bg: #00000000;
+	--button-secondary-fg: #cccccc;
+	--button-secondary-hover-bg: #2b2b2b;
+
+	/* Checkbox */
+	--checkbox-bg: #313131;
+	--checkbox-border: #3c3c3c;
+
+	/* Input */
+	--input: #313131;
+	--input-fg: #cccccc;
+	--input-border: #3c3c3c;
+	--input-option-active-bg: #2489db82;
+	--input-option-active-border: #2488db;
+	--placeholder: #989898;
+
+	/* Dropdown */
+	--dropdown-bg: #313131;
+	--dropdown-fg: #cccccc;
+	--dropdown-border: #3c3c3c;
+	--dropdown-list-bg: #1f1f1f;
+
+	/* Selection & Search */
+	--selection: #264f78;
+	--find-match: #9e6a03;
+
+	/* Link */
+	--link: #4daafc;
+	--link-active: #4daafc;
+
+	/* Borders */
+	--border: #3c3c3c;
+	--border-subtle: #454545;
+	--border-row: rgba(255, 255, 255, 0.09);
+	--border-tab: #2b2b2b;
+
+	/* Interactive states */
+	--toggle-active: rgba(36, 137, 219, 0.51);
+	--toggle-border: #2488db;
+	--hover-overlay: rgba(90, 93, 94, 0.31);
+	--active-overlay: rgba(99, 102, 103, 0.31);
+
+	/* Badge */
+	--badge-bg: #616161;
+	--badge-fg: #f8f8f8;
+
+	/* Progress */
+	--progress-bg: #0078d4;
+
+	/* Editor */
+	--editor-group-border: #ffffff17;
+	--editor-tabs-bg: #181818;
+	--editor-tabs-border: #2b2b2b;
+	--overview-ruler-border: #010409;
+
+	/* Line Numbers */
+	--line-number: #6e7681;
+	--line-number-active: #cccccc;
+
+	/* Widget */
+	--widget-bg: #202020;
+	--widget-border: #313131;
+
+	/* Menu */
+	--menu-bg: #1f1f1f;
+	--menu-fg: #cccccc;
+	--menu-selection: #0078d4;
+	--menu-selection-fg: #ffffff;
+	--menu-border: #3c3c3c;
+
+	/* Notification */
+	--notification-bg: #1f1f1f;
+	--notification-fg: #cccccc;
+	--notification-border: #2b2b2b;
+	--notification-header-bg: #1f1f1f;
+	--notification-header-fg: #cccccc;
+
+	/* Panel */
+	--panel-bg: #181818;
+	--panel-border: #2b2b2b;
+	--panel-input-border: #2b2b2b;
+	--panel-title-active-border: #0078d4;
+	--panel-title-active-fg: #cccccc;
+	--panel-title-inactive-fg: #9d9d9d;
+
+	/* Peek View */
+	--peek-editor-bg: #1f1f1f;
+	--peek-match-bg: #bb800966;
+	--peek-result-bg: #1f1f1f;
+	--peek-result-match-bg: #bb800966;
+
+	/* Picker */
+	--picker-border: #3c3c3c;
+	--picker-fg: #9d9d9d;
+
+	/* Quick Input */
+	--quick-input-bg: #222222;
+	--quick-input-fg: #cccccc;
+
+	/* Keybinding */
+	--keybinding-fg: #cccccc;
+
+	/* Settings */
+	--settings-dropdown-bg: #313131;
+	--settings-dropdown-border: #3c3c3c;
+	--settings-header-fg: #ffffff;
+	--settings-modified-indicator: #bb800966;
+
+	/* Debug */
+	--debug-toolbar-bg: #181818;
+
+	/* Chat */
+	--chat-command-bg: #26477866;
+	--chat-command-fg: #85b6ff;
+	--chat-edited-fg: #e2c08d;
+
+	/* Appearance */
+	--scrollbar: rgba(121, 121, 121, 0.4);
+	--scrollbar-hover: rgba(191, 191, 191, 0.4);
+	--scrollbar-active: rgba(100, 100, 100, 0.7);
+	--shadow: rgba(0, 0, 0, 0.36);
+	--zebra: rgba(204, 204, 204, 0.04);
+	--header-bg: rgba(204, 204, 204, 0.04);
+	--divider: rgb(204 204 204 / 0.4);
+	--indent-guide: rgba(88, 88, 88, 0.4);
+
+	/* Sidebar */
+	--sidebar: #181818;
+	--sidebar-foreground: #cccccc;
+	--sidebar-primary: #0078d4;
+	--sidebar-primary-foreground: #ffffff;
+	--sidebar-accent: #37373d;
+	--sidebar-accent-foreground: #ffffff;
+	--sidebar-border: #2b2b2b;
+	--sidebar-ring: #0078d4;
+	--sidebar-section-bg: #181818;
+	--sidebar-section-border: #2b2b2b;
+	--sidebar-section-fg: #cccccc;
+	--sidebar-title-fg: #cccccc;
+
+	/* Activity Bar */
+	--activitybar-bg: #181818;
+	--activitybar-fg: #d7d7d7;
+	--activitybar-inactive-fg: #868686;
+	--activitybar-border: #2b2b2b;
+	--activitybar-active-border: #0078d4;
+	--activitybar-badge-bg: #0078d4;
+	--activitybar-badge-fg: #ffffff;
+
+	/* Title Bar */
+	--titlebar-bg: #181818;
+	--titlebar-fg: #cccccc;
+	--titlebar-border: #2b2b2b;
+	--titlebar-inactive-bg: #1f1f1f;
+	--titlebar-inactive-fg: #9d9d9d;
+
+	/* Status Bar */
+	--statusbar-bg: #181818;
+	--statusbar-fg: #cccccc;
+	--statusbar-border: #2b2b2b;
+	--statusbar-debug-bg: #0078d4;
+	--statusbar-debug-fg: #ffffff;
+	--statusbar-focus-border: #0078d4;
+	--statusbar-nofolder-bg: #1f1f1f;
+	--statusbar-item-hover: #f1f1f133;
+	--statusbar-item-hover-fg: #ffffff;
+	--statusbar-item-focus-border: #0078d4;
+	--statusbar-prominent-bg: #6e768166;
+	--statusbar-remote-bg: #0078d4;
+	--statusbar-remote-fg: #ffffff;
+
+	/* Tabs */
+	--tab-active-bg: #1f1f1f;
+	--tab-active-fg: #ffffff;
+	--tab-active-border: #1f1f1f;
+	--tab-active-border-top: #0078d4;
+	--tab-selected-border-top: #6caddf;
+	--tab-inactive-bg: #181818;
+	--tab-inactive-fg: #9d9d9d;
+	--tab-hover-bg: #1f1f1f;
+	--tab-unfocused-active-border: #1f1f1f;
+	--tab-unfocused-active-border-top: #2b2b2b;
+	--tab-unfocused-hover-bg: #1f1f1f;
+
+	/* Code & Text */
+	--code-bg: #2b2b2b;
+	--blockquote-bg: #2b2b2b;
+	--blockquote-border: #616161;
+	--text-preformat: #d0d0d0;
+	--text-preformat-bg: #3c3c3c;
+	--text-separator: #21262d;
+
+	/* Terminal */
+	--terminal-fg: #cccccc;
+	--terminal-tab-active-border: #0078d4;
+
+	/* Git / Diff */
+	--git-added: #2ea043;
+	--git-deleted: #f85149;
+	--git-modified: #0078d4;
+	--diff-inserted-bg: rgba(35, 134, 54, 0.3);
+	--diff-removed-bg: rgba(248, 81, 73, 0.3);
+
+	/* Welcome */
+	--welcome-tile-bg: #2b2b2b;
+	--welcome-progress-fg: #0078d4;
+
+	/* Charts */
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+}
+
+/* ─── Tailwind Integration ──────────────────────────── */
+@theme inline {
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	--color-foreground: var(--foreground);
+	--color-foreground-bright: var(--foreground-bright);
+	--color-foreground-muted: var(--foreground-muted);
+	--color-foreground-subtle: var(--foreground-subtle);
+	--color-description-fg: var(--description-fg);
+	--color-error-fg: var(--error-fg);
+	--color-icon-fg: var(--icon-fg);
+
+	--color-background: var(--background);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-background-elevated: var(--background-elevated);
+	--color-background-hover: var(--background-hover);
+	--color-background-selected: var(--background-selected);
+	--color-background-panel: var(--background-panel);
+
+	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
+	--color-primary-selection: var(--primary-selection);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+
+	--color-success: var(--success);
+	--color-success-bg: var(--success-bg);
+	--color-warning: var(--warning);
+	--color-warning-bg: var(--warning-bg);
+	--color-info: var(--info);
+	--color-info-bg: var(--info-bg);
+	--color-destructive: var(--destructive);
+	--color-destructive-bg: var(--destructive-bg);
+
+	--color-ring: var(--ring);
+
+	--color-button-bg: var(--button-bg);
+	--color-button-fg: var(--button-fg);
+	--color-button-border: var(--button-border);
+	--color-button-hover-bg: var(--button-hover-bg);
+	--color-button-secondary-bg: var(--button-secondary-bg);
+	--color-button-secondary-fg: var(--button-secondary-fg);
+	--color-button-secondary-hover-bg: var(--button-secondary-hover-bg);
+
+	--color-checkbox-bg: var(--checkbox-bg);
+	--color-checkbox-border: var(--checkbox-border);
+
+	--color-input: var(--input);
+	--color-input-fg: var(--input-fg);
+	--color-input-border: var(--input-border);
+	--color-input-option-active-bg: var(--input-option-active-bg);
+	--color-input-option-active-border: var(--input-option-active-border);
+	--color-placeholder: var(--placeholder);
+
+	--color-dropdown-bg: var(--dropdown-bg);
+	--color-dropdown-fg: var(--dropdown-fg);
+	--color-dropdown-border: var(--dropdown-border);
+	--color-dropdown-list-bg: var(--dropdown-list-bg);
+
+	--color-selection: var(--selection);
+	--color-find-match: var(--find-match);
+	--color-link: var(--link);
+	--color-link-active: var(--link-active);
+
+	--color-border: var(--border);
+	--color-border-subtle: var(--border-subtle);
+	--color-border-row: var(--border-row);
+	--color-border-tab: var(--border-tab);
+
+	--color-toggle-active: var(--toggle-active);
+	--color-toggle-border: var(--toggle-border);
+	--color-hover-overlay: var(--hover-overlay);
+	--color-active-overlay: var(--active-overlay);
+
+	--color-badge-bg: var(--badge-bg);
+	--color-badge-fg: var(--badge-fg);
+	--color-progress-bg: var(--progress-bg);
+
+	--color-editor-group-border: var(--editor-group-border);
+	--color-editor-tabs-bg: var(--editor-tabs-bg);
+	--color-editor-tabs-border: var(--editor-tabs-border);
+	--color-overview-ruler-border: var(--overview-ruler-border);
+
+	--color-line-number: var(--line-number);
+	--color-line-number-active: var(--line-number-active);
+
+	--color-widget-bg: var(--widget-bg);
+	--color-widget-border: var(--widget-border);
+
+	--color-menu-bg: var(--menu-bg);
+	--color-menu-fg: var(--menu-fg);
+	--color-menu-selection: var(--menu-selection);
+	--color-menu-selection-fg: var(--menu-selection-fg);
+	--color-menu-border: var(--menu-border);
+
+	--color-notification-bg: var(--notification-bg);
+	--color-notification-fg: var(--notification-fg);
+	--color-notification-border: var(--notification-border);
+	--color-notification-header-bg: var(--notification-header-bg);
+	--color-notification-header-fg: var(--notification-header-fg);
+
+	--color-panel-bg: var(--panel-bg);
+	--color-panel-border: var(--panel-border);
+	--color-panel-input-border: var(--panel-input-border);
+	--color-panel-title-active-border: var(--panel-title-active-border);
+	--color-panel-title-active-fg: var(--panel-title-active-fg);
+	--color-panel-title-inactive-fg: var(--panel-title-inactive-fg);
+
+	--color-peek-editor-bg: var(--peek-editor-bg);
+	--color-peek-match-bg: var(--peek-match-bg);
+	--color-peek-result-bg: var(--peek-result-bg);
+	--color-peek-result-match-bg: var(--peek-result-match-bg);
+
+	--color-picker-border: var(--picker-border);
+	--color-picker-fg: var(--picker-fg);
+
+	--color-quick-input-bg: var(--quick-input-bg);
+	--color-quick-input-fg: var(--quick-input-fg);
+
+	--color-keybinding-fg: var(--keybinding-fg);
+
+	--color-settings-dropdown-bg: var(--settings-dropdown-bg);
+	--color-settings-dropdown-border: var(--settings-dropdown-border);
+	--color-settings-header-fg: var(--settings-header-fg);
+	--color-settings-modified-indicator: var(--settings-modified-indicator);
+
+	--color-debug-toolbar-bg: var(--debug-toolbar-bg);
+
+	--color-chat-command-bg: var(--chat-command-bg);
+	--color-chat-command-fg: var(--chat-command-fg);
+	--color-chat-edited-fg: var(--chat-edited-fg);
+
+	--color-scrollbar: var(--scrollbar);
+	--color-scrollbar-hover: var(--scrollbar-hover);
+	--color-scrollbar-active: var(--scrollbar-active);
+	--color-shadow: var(--shadow);
+	--color-zebra: var(--zebra);
+	--color-header-bg: var(--header-bg);
+	--color-divider: var(--divider);
+	--color-indent-guide: var(--indent-guide);
+
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-section-bg: var(--sidebar-section-bg);
+	--color-sidebar-section-border: var(--sidebar-section-border);
+	--color-sidebar-section-fg: var(--sidebar-section-fg);
+	--color-sidebar-title-fg: var(--sidebar-title-fg);
+
+	--color-activitybar-bg: var(--activitybar-bg);
+	--color-activitybar-fg: var(--activitybar-fg);
+	--color-activitybar-inactive-fg: var(--activitybar-inactive-fg);
+	--color-activitybar-border: var(--activitybar-border);
+	--color-activitybar-active-border: var(--activitybar-active-border);
+	--color-activitybar-badge-bg: var(--activitybar-badge-bg);
+	--color-activitybar-badge-fg: var(--activitybar-badge-fg);
+
+	--color-titlebar-bg: var(--titlebar-bg);
+	--color-titlebar-fg: var(--titlebar-fg);
+	--color-titlebar-border: var(--titlebar-border);
+	--color-titlebar-inactive-bg: var(--titlebar-inactive-bg);
+	--color-titlebar-inactive-fg: var(--titlebar-inactive-fg);
+
+	--color-statusbar-bg: var(--statusbar-bg);
+	--color-statusbar-fg: var(--statusbar-fg);
+	--color-statusbar-border: var(--statusbar-border);
+	--color-statusbar-debug-bg: var(--statusbar-debug-bg);
+	--color-statusbar-debug-fg: var(--statusbar-debug-fg);
+	--color-statusbar-focus-border: var(--statusbar-focus-border);
+	--color-statusbar-nofolder-bg: var(--statusbar-nofolder-bg);
+	--color-statusbar-item-hover: var(--statusbar-item-hover);
+	--color-statusbar-item-hover-fg: var(--statusbar-item-hover-fg);
+	--color-statusbar-item-focus-border: var(--statusbar-item-focus-border);
+	--color-statusbar-prominent-bg: var(--statusbar-prominent-bg);
+	--color-statusbar-remote-bg: var(--statusbar-remote-bg);
+	--color-statusbar-remote-fg: var(--statusbar-remote-fg);
+
+	--color-tab-active-bg: var(--tab-active-bg);
+	--color-tab-active-fg: var(--tab-active-fg);
+	--color-tab-active-border: var(--tab-active-border);
+	--color-tab-active-border-top: var(--tab-active-border-top);
+	--color-tab-selected-border-top: var(--tab-selected-border-top);
+	--color-tab-inactive-bg: var(--tab-inactive-bg);
+	--color-tab-inactive-fg: var(--tab-inactive-fg);
+	--color-tab-hover-bg: var(--tab-hover-bg);
+	--color-tab-unfocused-active-border: var(--tab-unfocused-active-border);
+	--color-tab-unfocused-active-border-top: var(--tab-unfocused-active-border-top);
+	--color-tab-unfocused-hover-bg: var(--tab-unfocused-hover-bg);
+
+	--color-code-bg: var(--code-bg);
+	--color-blockquote-bg: var(--blockquote-bg);
+	--color-blockquote-border: var(--blockquote-border);
+	--color-text-preformat: var(--text-preformat);
+	--color-text-preformat-bg: var(--text-preformat-bg);
+	--color-text-separator: var(--text-separator);
+
+	--color-terminal-fg: var(--terminal-fg);
+	--color-terminal-tab-active-border: var(--terminal-tab-active-border);
+
+	--color-git-added: var(--git-added);
+	--color-git-deleted: var(--git-deleted);
+	--color-git-modified: var(--git-modified);
+	--color-diff-inserted-bg: var(--diff-inserted-bg);
+	--color-diff-removed-bg: var(--diff-removed-bg);
+
+	--color-welcome-tile-bg: var(--welcome-tile-bg);
+	--color-welcome-progress-fg: var(--welcome-progress-fg);
+
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+}
+
+/* ─── Base Layer ────────────────────────────────────── */
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+	}
+
+	/* ─── Markdown Rendering Harmony ─── */
+	.markdown-body {
+		background-color: transparent !important;
+		color: var(--foreground) !important;
+		font-family: inherit !important;
+		font-size: 14px !important;
+		padding: 0 !important;
+	}
+
+	.markdown-body a {
+		color: var(--primary) !important;
+	}
+
+	.markdown-body pre {
+		background-color: var(--muted) !important;
+		border: 1px solid var(--border) !important;
+	}
+
+	.markdown-body code {
+		background-color: var(--muted) !important;
+	}
+
+	.markdown-body h1,
+	.markdown-body h2 {
+		border-bottom-color: var(--border) !important;
+	}
+
+	.markdown-body blockquote {
+		border-left-color: var(--border) !important;
+		color: var(--muted-foreground) !important;
+	}
+
+	.markdown-body table tr {
+		background-color: transparent !important;
+		border-top-color: var(--border) !important;
+	}
+
+	.markdown-body table th,
+	.markdown-body table td {
+		border-color: var(--border) !important;
+	}
+
+	.markdown-body table tr:nth-child(2n) {
+		background-color: var(--muted) !important;
+	}
+}
