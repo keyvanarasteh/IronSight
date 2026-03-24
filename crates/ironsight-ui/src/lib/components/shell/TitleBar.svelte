@@ -1,6 +1,6 @@
 <script lang="ts">
-
-	import { Menu, Search, Layout, PanelBottom, ChevronDown } from 'lucide-svelte';
+	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import { Search, Layout, PanelBottom, ChevronDown, Minus, Square, X } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import Dialog from '$components/overlay/Dialog.svelte';
 	import { qrsWebSocket } from '$stores/qrs-websocket.svelte';
@@ -40,6 +40,37 @@
 	let aiChatResponse = $state('');
 	let aiChatError = $state('');
 
+	// ── Tauri window controls ────────────────────────────
+	let isMaximized = $state(false);
+
+	$effect(() => {
+		const appWindow = getCurrentWindow();
+		appWindow.isMaximized().then((m) => {
+			isMaximized = m;
+		});
+
+		const unlisten = appWindow.onResized(async () => {
+			isMaximized = await appWindow.isMaximized();
+		});
+
+		return () => {
+			unlisten.then((fn) => fn());
+		};
+	});
+
+	async function minimize() {
+		await getCurrentWindow().minimize();
+	}
+
+	async function toggleMaximize() {
+		await getCurrentWindow().toggleMaximize();
+	}
+
+	async function close() {
+		await getCurrentWindow().close();
+	}
+
+	// ── AI Chat via WebSocket ────────────────────────────
 	$effect(() => {
 		const unsub = qrsWebSocket.onMessage((msg) => {
 			if (!msg || typeof msg !== 'object') return;
@@ -133,10 +164,9 @@
 
 <header
 	data-tauri-drag-region
-	class="bg-titlebar-bg text-titlebar-fg border-titlebar-border z-50 flex h-10 items-center justify-between border-b px-3"
+	class="bg-titlebar-bg text-titlebar-fg border-titlebar-border z-50 flex h-10 shrink-0 items-center justify-between border-b px-3 select-none"
 >
-	<div class="flex items-center gap-2 md:gap-4">
-
+	<div class="flex items-center gap-4">
 		<div class="flex items-center gap-3 text-[12px] text-inherit opacity-80">
 			<svg class="h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
 				<path
@@ -205,8 +235,8 @@
 		</button>
 	</div>
 
-	<div class="flex items-center gap-2 opacity-80 md:gap-4">
-		<div class="flex items-center gap-1 text-inherit md:gap-3">
+	<div class="flex items-center gap-4 opacity-80">
+		<div class="flex items-center gap-3 text-inherit">
 			<button
 				class="m-0 cursor-pointer border-none bg-transparent p-0 text-inherit"
 				aria-label="Layout"
@@ -222,16 +252,37 @@
 				<PanelBottom class="h-4 w-4 hover:text-white" />
 			</button>
 		</div>
-		<div class="ml-2 flex gap-2">
-			<div
-				class="bg-foreground/20 hover:bg-foreground/30 h-3 w-3 cursor-pointer rounded-full transition-colors"
-			></div>
-			<div
-				class="bg-foreground/20 hover:bg-foreground/30 h-3 w-3 cursor-pointer rounded-full transition-colors"
-			></div>
-			<div
-				class="bg-foreground/20 hover:bg-destructive/80 h-3 w-3 cursor-pointer rounded-full transition-colors"
-			></div>
+
+		<!-- Window controls -->
+		<div class="flex h-full items-center">
+			<button
+				class="flex h-8 w-9 items-center justify-center border-none bg-transparent text-inherit transition-colors hover:bg-white/10"
+				onclick={minimize}
+				aria-label="Minimize"
+			>
+				<Minus class="h-3.5 w-3.5" />
+			</button>
+			<button
+				class="flex h-8 w-9 items-center justify-center border-none bg-transparent text-inherit transition-colors hover:bg-white/10"
+				onclick={toggleMaximize}
+				aria-label={isMaximized ? 'Restore' : 'Maximize'}
+			>
+				{#if isMaximized}
+					<svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
+						<rect x="3" y="5" width="8" height="8" rx="0.5" />
+						<path d="M5 5V3.5a.5.5 0 0 1 .5-.5H13.5a.5.5 0 0 1 .5.5V11.5a.5.5 0 0 1-.5.5H11" />
+					</svg>
+				{:else}
+					<Square class="h-3 w-3" />
+				{/if}
+			</button>
+			<button
+				class="flex h-8 w-9 items-center justify-center border-none bg-transparent text-inherit transition-colors hover:bg-red-500/90 hover:text-white"
+				onclick={close}
+				aria-label="Close"
+			>
+				<X class="h-3.5 w-3.5" />
+			</button>
 		</div>
 	</div>
 </header>

@@ -16,6 +16,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { locales, localizeHref as resolve } from '$lib/paraglide/runtime';
 	import { ui } from '$lib/state/ui.svelte';
+
 	import type { ActivityItem } from '$lib/types';
 	import {
 		Activity,
@@ -40,23 +41,13 @@
 		{ id: 'settings', icon: Settings, tooltip: 'Settings' }
 	];
 
-	// ── Sidebar title map ────────────────────────────────
-	const sidebarTitles: Record<string, string> = {
-		dashboard: 'Dashboard',
-		settings: 'Settings'
-	};
-
-	let sidebarTitle = $derived(sidebarTitles[ui.activeSidebar] ?? 'Explorer');
-
-	// ── Handlers ─────────────────────────────────────────
 	function handleSidebarChange(id: string) {
 		ui.setSidebar(id);
 	}
 
-
 	// ── Breadcrumbs from URL ─────────────────────────────
 	let breadcrumbSegments = $derived(
-		['Q-Static'].concat(
+		['IronSight'].concat(
 			page.url.pathname
 				.split('/')
 				.filter(Boolean)
@@ -67,8 +58,6 @@
 	function getTabDetails(path: string, label: string) {
 		let icon = Activity;
 		let lang = '';
-		if (path.startsWith('/settings')) icon = Settings;
-
 		return { icon, lang };
 	}
 
@@ -144,29 +133,27 @@
 			{bottomItems}
 		/>
 
+
 		<!-- ═══ PART: SidebarPart (flow-based, resizable) ═══ -->
 		<SidebarPart
 			visible={ui.sidebarVisible}
 			position="left"
 			bind:width={ui.sidebarWidth}
-			title={sidebarTitle}
+			title="Explorer"
 			onclose={() => ui.toggleSidebar()}
 		>
 			<SidebarSection title="NAVIGATION" open={true}>
 				<div class="space-y-[2px] px-2 py-1">
-					{#each topItems as item (item.id)}
-					{@const Icon = item.icon as any}
 					<a
-						href={resolve(item.id === 'dashboard' ? '/' : `/${item.id}`)}
+						href="/"
 						class="group text-sidebar-foreground/60 hover:bg-background-hover hover:text-sidebar-foreground flex w-full items-center gap-2 rounded px-4 py-[3px] text-[13px] no-underline transition-colors {page
-							.url.pathname === (item.id === 'dashboard' ? '/' : `/${item.id}`)
+							.url.pathname === '/'
 							? 'bg-background-selected text-sidebar-foreground font-medium'
 							: ''}"
 					>
-						<Icon class="h-3.5 w-3.5 opacity-80" />
-						<span class="truncate">{item.tooltip}</span>
+						<Activity class="h-3.5 w-3.5 opacity-80" />
+						<span class="truncate">Dashboard</span>
 					</a>
-					{/each}
 				</div>
 			</SidebarSection>
 		</SidebarPart>

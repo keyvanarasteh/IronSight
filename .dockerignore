@@ -1,6 +1,7 @@
 # Build artifacts
 target/
 **/*.rs.bk
+missing_modules.txt
 
 # Git
 .git/
@@ -17,11 +18,26 @@ Dockerfile
 docker-compose*.yml
 .dockerignore
 
+# Settings & Secrets
+.env
+.env.*
+
 # Documentation & Audit
 audit/
 docs/
 *.md
 LICENSE
+
+# Dev Tooling, Scripts & CI
+tasks/
+scripts/
+.agents/
+.github/
+
+# Coverage & Profiling
+*.profraw
+lcov.info
+coverage/
 
 # OS
 .DS_Store

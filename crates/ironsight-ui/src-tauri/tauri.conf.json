@@ -12,9 +12,10 @@
   "app": {
     "windows": [
       {
-        "title": "ironsight-ui",
-        "width": 800,
-        "height": 600
+        "title": "IronSight EDR",
+        "width": 1280,
+        "height": 800,
+        "decorations": false
       }
     ],
     "security": {

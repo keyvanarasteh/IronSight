@@ -1,5 +1,4 @@
 <script lang="ts">
-
 	import { getThemeContext } from '$lib/theme';
 	import { Home, Moon, Sun } from 'lucide-svelte';
 	import type { ActivityItem } from '../../types';

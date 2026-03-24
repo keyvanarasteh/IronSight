@@ -1,0 +1,61 @@
+"crate: core":
+  - any:
+      - "crates/ironsight-core/**/*"
+
+"crate: security":
+  - any:
+      - "crates/ironsight-security/**/*"
+
+"crate: network":
+  - any:
+      - "crates/ironsight-network/**/*"
+
+"crate: memory":
+  - any:
+      - "crates/ironsight-memory/**/*"
+
+"crate: kernel":
+  - any:
+      - "crates/ironsight-kernel/**/*"
+
+"crate: heuristic":
+  - any:
+      - "crates/ironsight-heuristic/**/*"
+
+"crate: response":
+  - any:
+      - "crates/ironsight-response/**/*"
+
+"crate: report":
+  - any:
+      - "crates/ironsight-report/**/*"
+
+"crate: service":
+  - any:
+      - "crates/ironsight-service/**/*"
+
+"crate: ui":
+  - any:
+      - "crates/ironsight-ui/**/*"
+
+ci:
+  - any:
+      - ".github/workflows/**/*"
+      - ".github/dependabot.yml"
+
+docker:
+  - any:
+      - "Dockerfile"
+      - "docker-compose*.yml"
+      - ".dockerignore"
+      - "docker/**/*"
+
+docs:
+  - any:
+      - "**/*.md"
+      - "docs/**/*"
+
+scripts:
+  - any:
+      - "scripts/**/*"
+      - "tasks/**/*"

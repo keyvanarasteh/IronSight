@@ -1,0 +1,7 @@
+/.github/CODEOWNERS @keyvanarasteh
+/SECURITY.md @keyvanarasteh
+/crates/ironsight-security/** @keyvanarasteh
+/crates/ironsight-kernel/** @keyvanarasteh
+/crates/ironsight-response/** @keyvanarasteh
+/crates/ironsight-core/** @keyvanarasteh
+/.github/workflows/** @keyvanarasteh

@@ -2,14 +2,46 @@ target
 logs
 Config.toml
 .env
+.env.local
+.env.*.local
 assets/infographic-templates/Rapid Code Visualization.html
 backups
-# DS_Store
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Cargo
 .cargo
 .cargo/*
-tdlib_db
-tdlib_db/*
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Databases
+tdlib_db/
+*.db
+*.db-shm
+*.db-wal
+
+# Build Artifacts & Logs
+check.log
+missing_modules.txt
+*.log
+
+# Coverage & Profiling
+*.profraw
+lcov.info
+coverage/
+
+# Node & Tauri UI
+node_modules/
+dist/
+crates/ironsight-ui/dist/
+
+# IronSight Specific
+dumps/
+reports/
 features/web-analyzer
-tools.db-shm
-tools.db-wal
