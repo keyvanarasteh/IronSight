@@ -158,7 +158,7 @@
 			<span class={wsColor}>{wsLabel}</span>
 		</button>
 
-		<div class="hidden h-full items-center sm:flex">
+		<div class="flex h-full items-center">
 			<button
 				class="hover:bg-statusbar-item-hover m-0 flex h-full cursor-pointer items-center gap-1 border-none bg-transparent px-2 text-inherit"
 				title="{featuresCount} active features — click to view registries"

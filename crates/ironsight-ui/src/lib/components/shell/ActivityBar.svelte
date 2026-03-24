@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+
 	import { getThemeContext } from '$lib/theme';
 	import { Home, Moon, Sun } from 'lucide-svelte';
 	import type { ActivityItem } from '../../types';
@@ -21,11 +21,11 @@
 </script>
 
 <nav
-	class="bg-activitybar-bg border-activitybar-border hidden w-12 shrink-0 flex-col items-center justify-between border-r py-2 md:flex"
+	class="bg-activitybar-bg border-activitybar-border flex w-12 shrink-0 flex-col items-center justify-between border-r py-2"
 >
 	<div class="flex w-full flex-col gap-1">
 		<a
-			href={resolve('/')}
+			href="/"
 			title="Home"
 			class="text-activitybar-inactive-fg hover:text-activitybar-fg relative flex h-12 w-full items-center justify-center no-underline opacity-80 transition-all hover:opacity-100"
 		>

@@ -9,7 +9,9 @@
 		Breadcrumbs,
 		SidebarPart,
 		SidebarSection,
-		ThemeProvider
+		StatusBar,
+		ThemeProvider,
+		TitleBar
 	} from '$lib';
 	import favicon from '$lib/assets/favicon.svg';
 	import { locales, localizeHref as resolve } from '$lib/paraglide/runtime';
@@ -123,6 +125,15 @@
 <ThemeProvider
 	class="bg-background text-foreground selection:bg-primary/20 selection:text-foreground fixed inset-0 z-0 flex flex-col overflow-hidden antialiased"
 >
+	<!-- ═══ TITLE BAR ═══ -->
+	<TitleBar
+		workspaceName="IronSight EDR"
+		onToggleSidebar={() => ui.toggleSidebar()}
+		onToggleTerminal={() => ui.togglePanel()}
+		onToggleMobileMenu={() => ui.toggleSidebar()}
+		menuItems={[]}
+	/>
+
 	<!-- ═══ MIDDLE SECTION (horizontal flex) ═══ -->
 	<div class="flex min-h-0 flex-1">
 		<!-- ═══ PART: Activity Bar ═══ -->
@@ -220,7 +231,12 @@
 	</Modal>
 
 	<!-- ═══ PART: Status Bar ═══ -->
-	<!-- Removed LayoutStatusBar to resolve module error -->
+	<StatusBar
+		branch="main"
+		errors={0}
+		warnings={0}
+		language="EDR"
+	/>
 </ThemeProvider>
 
 <style>
