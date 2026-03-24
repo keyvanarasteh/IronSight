@@ -61,7 +61,7 @@ pub fn analyze_path(exe_path: Option<&Path>) -> PathAnalysis {
     }
 
     // Check if running from Downloads
-    if path_lower.contains("downloads") || path_lower.contains("desktop") {
+    if is_user_download_dir(&path_lower) {
         return PathAnalysis {
             is_suspicious: true,
             reason: Some("Binary running from user download/desktop area".into()),
@@ -74,6 +74,18 @@ pub fn analyze_path(exe_path: Option<&Path>) -> PathAnalysis {
         reason: None,
         path: path_str.into_owned(),
     }
+}
+
+fn is_user_download_dir(path: &str) -> bool {
+    let patterns = [
+        "/home/*/downloads/*",
+        "/users/*/downloads/*",
+        "/home/*/desktop/*",
+        "/users/*/desktop/*",
+        "/tmp/*",
+        "/dev/shm/*",
+    ];
+    patterns.iter().any(|p| glob_match::glob_match(p, path))
 }
 
 #[cfg(test)]

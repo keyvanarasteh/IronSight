@@ -7,6 +7,8 @@
 pub mod actions;
 pub mod exclusions;
 pub mod handler;
+pub mod audit;
+pub mod rate_limit;
 
 pub use actions::{ActionResult, ActionType};
 pub use exclusions::ExclusionList;

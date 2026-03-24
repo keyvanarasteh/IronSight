@@ -39,13 +39,37 @@ impl EntropyRisk {
     }
 }
 
-/// Compute Shannon entropy of a file (bits per byte, 0.0–8.0).
 pub fn compute_entropy(path: &Path) -> Result<EntropyResult, std::io::Error> {
-    let data = fs::read(path)?;
-    let entropy = shannon_entropy(&data);
+    let file = fs::File::open(path)?;
+    let metadata = file.metadata()?;
+    let mut reader = std::io::BufReader::with_capacity(65536, file);
+    let mut freq = [0u64; 256];
+    let mut total = 0u64;
+    
+    let mut buf = vec![0u8; 65536];
+    loop {
+        use std::io::Read;
+        let n = reader.read(&mut buf)?;
+        if n == 0 { break; }
+        for &byte in &buf[..n] {
+            freq[byte as usize] += 1;
+        }
+        total += n as u64;
+    }
+    
+    let entropy = if total == 0 {
+        0.0
+    } else {
+        let len = total as f64;
+        freq.iter().filter(|&&c| c > 0).map(|&c| {
+            let p = c as f64 / len;
+            -p * p.log2()
+        }).sum()
+    };
+    
     Ok(EntropyResult {
         entropy,
-        file_size: data.len() as u64,
+        file_size: metadata.len(),
         risk_level: EntropyRisk::from_entropy(entropy),
     })
 }

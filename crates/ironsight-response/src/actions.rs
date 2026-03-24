@@ -25,6 +25,8 @@ pub enum ActionType {
     MemoryDump,
     /// SIGKILL — terminate the process.
     Kill,
+    /// Full forensic sequence — suspend, dump, kill.
+    SuspendDumpKill,
     /// Log the event for later review.
     LogOnly,
 }
@@ -147,8 +149,16 @@ pub fn dump_memory(pid: u32, output_dir: &str) -> ActionResult {
         }
     };
 
-    // Create output directory if needed
-    let _ = std::fs::create_dir_all(output_dir);
+    // Create output directory if needed with strict permissions
+    if let Err(e) = ensure_dump_dir(std::path::Path::new(output_dir)) {
+        return ActionResult {
+            pid,
+            action: ActionType::MemoryDump,
+            success: false,
+            message: format!("Cannot create secure dump directory: {e}"),
+            timestamp: now,
+        };
+    }
 
     let mut output = match std::fs::File::create(&dump_path) {
         Ok(f) => f,
@@ -193,6 +203,12 @@ pub fn dump_memory(pid: u32, output_dir: &str) -> ActionResult {
 
         if mem_file.seek(SeekFrom::Start(start)).is_err() {
             continue;
+        }
+
+        const MAX_TOTAL_DUMP_SIZE: u64 = 256 * 1024 * 1024; // 256 MiB
+        if total_bytes + size > MAX_TOTAL_DUMP_SIZE {
+            tracing::warn!("Dump size limit reached ({} MiB), stopping", MAX_TOTAL_DUMP_SIZE / (1024*1024));
+            break;
         }
 
         let mut buf = vec![0u8; size as usize];
@@ -261,4 +277,29 @@ pub fn kill_process(pid: u32) -> ActionResult {
 
 fn timestamp_now() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string()
+}
+
+#[cfg(unix)]
+pub fn verify_process_exists(pid: u32) -> bool {
+    use nix::sys::signal::kill;
+    use nix::unistd::Pid;
+    kill(Pid::from_raw(pid as i32), None).is_ok()
+}
+
+#[cfg(not(unix))]
+pub fn verify_process_exists(_pid: u32) -> bool {
+    true
+}
+
+#[cfg(target_os = "linux")]
+fn ensure_dump_dir(path: &std::path::Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::create_dir_all(path)?;
+    let perms = std::fs::Permissions::from_mode(0o700);
+    std::fs::set_permissions(path, perms)?;
+    let meta = std::fs::metadata(path)?;
+    if std::os::unix::fs::MetadataExt::uid(&meta) != 0 {
+        tracing::warn!("Dump directory not owned by root: {}", path.display());
+    }
+    Ok(())
 }

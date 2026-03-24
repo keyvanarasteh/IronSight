@@ -11,6 +11,10 @@ pub struct ExclusionList {
     pub pids: Vec<u32>,
     /// Path prefixes to exclude (e.g., "/usr/sbin/").
     pub path_prefixes: Vec<String>,
+    /// Glob/Regex patterns for process names.
+    pub patterns: Vec<String>,
+    #[serde(skip)]
+    pub name_patterns: Vec<regex::Regex>,
 }
 
 impl ExclusionList {
@@ -39,16 +43,26 @@ impl ExclusionList {
                 "/usr/lib/systemd/".into(),
                 "/usr/sbin/".into(),
             ],
+            patterns: Vec::new(),
+            name_patterns: Vec::new(),
         }
     }
 
-    /// Check if a process should be excluded from automated response.
-    pub fn is_excluded(&self, name: &str, pid: u32) -> bool {
+    /// Check if a process should be excluded from automated response (consolidated).
+    pub fn is_excluded(&self, name: &str, pid: u32, path: Option<&str>) -> bool {
         if self.pids.contains(&pid) {
             return true;
         }
         if self.names.iter().any(|n| n == name) {
             return true;
+        }
+        if self.name_patterns.iter().any(|re| re.is_match(name)) {
+            return true;
+        }
+        if let Some(p) = path {
+            if self.path_prefixes.iter().any(|prefix| p.starts_with(prefix)) {
+                return true;
+            }
         }
         false
     }
@@ -65,6 +79,13 @@ impl ExclusionList {
     pub fn add_pid(&mut self, pid: u32) {
         self.pids.push(pid);
     }
+    
+    pub fn add_pattern(&mut self, pattern: &str) -> Result<(), regex::Error> {
+        let re = regex::Regex::new(pattern)?;
+        self.name_patterns.push(re);
+        self.patterns.push(pattern.to_string());
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -74,9 +95,9 @@ mod tests {
     #[test]
     fn system_defaults_protect_init() {
         let list = ExclusionList::system_defaults();
-        assert!(list.is_excluded("systemd", 1));
-        assert!(list.is_excluded("init", 99));
-        assert!(list.is_excluded("sshd", 500));
+        assert!(list.is_excluded("systemd", 1, None));
+        assert!(list.is_excluded("init", 99, None));
+        assert!(list.is_excluded("sshd", 500, None));
     }
 
     #[test]
@@ -84,10 +105,12 @@ mod tests {
         let mut list = ExclusionList::new();
         list.add_name("my_service");
         list.add_pid(42);
+        list.add_pattern("^test_.*").unwrap();
 
-        assert!(list.is_excluded("my_service", 100));
-        assert!(list.is_excluded("unknown", 42));
-        assert!(!list.is_excluded("malware", 999));
+        assert!(list.is_excluded("my_service", 100, None));
+        assert!(list.is_excluded("unknown", 42, None));
+        assert!(list.is_excluded("test_runner", 999, None));
+        assert!(!list.is_excluded("malware", 999, None));
     }
 
     #[test]

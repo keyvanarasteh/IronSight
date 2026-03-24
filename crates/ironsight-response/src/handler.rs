@@ -46,6 +46,7 @@ impl ResponseHandler {
         &self,
         pid: u32,
         process_name: &str,
+        path: Option<&str>,
         threat_score: f64,
         recommended: crate::actions::ActionType,
     ) -> ResponseLog {
@@ -58,7 +59,7 @@ impl ResponseHandler {
         };
 
         // Check exclusion list
-        if self.exclusions.is_excluded(process_name, pid) {
+        if self.exclusions.is_excluded(process_name, pid, path) {
             tracing::info!(
                 pid,
                 process_name,
@@ -80,24 +81,29 @@ impl ResponseHandler {
                 tracing::info!(pid, process_name, threat_score, "Threat logged (no action)");
             }
             ActionType::Suspend => {
-                // Suspend only
                 let result = actions::suspend(pid);
                 tracing::warn!(pid, process_name, "Process suspended");
                 log.actions_taken.push(result);
             }
-            ActionType::Kill => {
-                // Full forensic sequence: Suspend → Dump → Kill
-                let suspend_result = actions::suspend(pid);
-                log.actions_taken.push(suspend_result);
-
+            ActionType::Resume => {
+                let result = actions::resume(pid);
+                tracing::info!(pid, process_name, "Process resumed");
+                log.actions_taken.push(result);
+            }
+            ActionType::MemoryDump => {
                 let dump_result = actions::dump_memory(pid, &self.dump_dir);
+                tracing::warn!(pid, process_name, "Process memory dumped");
                 log.actions_taken.push(dump_result);
-
+            }
+            ActionType::Kill => {
                 let kill_result = actions::kill_process(pid);
-                tracing::error!(pid, process_name, threat_score, "Process killed after forensic dump");
+                tracing::error!(pid, process_name, threat_score, "Process killed");
                 log.actions_taken.push(kill_result);
             }
-            _ => {}
+            ActionType::SuspendDumpKill => {
+                let extra_log = self.forensic_kill(pid, process_name);
+                log.actions_taken.extend(extra_log.actions_taken);
+            }
         }
 
         log
@@ -113,11 +119,28 @@ impl ResponseHandler {
             was_excluded: false,
         };
 
+        if !actions::verify_process_exists(pid) {
+            tracing::warn!(pid, process_name, "Process already exited before forensic_kill");
+            log.actions_taken.push(ActionResult {
+                pid,
+                action: ActionType::SuspendDumpKill,
+                success: false,
+                message: "Process not found".to_string(),
+                timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
+            });
+            return log;
+        }
+
         tracing::warn!(pid, process_name, "Starting forensic kill sequence");
 
         // Step 1: Suspend — freeze the process
         let suspend = actions::suspend(pid);
         log.actions_taken.push(suspend);
+
+        // Check if it's still there
+        if !actions::verify_process_exists(pid) {
+            return log;
+        }
 
         // Step 2: Dump — capture memory for analysis
         let dump = actions::dump_memory(pid, &self.dump_dir);
@@ -141,7 +164,7 @@ mod tests {
         exclusions.add_name("systemd");
 
         let handler = ResponseHandler::new("/tmp/dumps").with_exclusions(exclusions);
-        let log = handler.respond(1, "systemd", 80.0, ActionType::Kill);
+        let log = handler.respond(1, "systemd", None, 80.0, ActionType::Kill);
 
         assert!(log.was_excluded);
         assert_eq!(log.actions_taken.len(), 1);
@@ -151,7 +174,7 @@ mod tests {
     #[test]
     fn log_only_action() {
         let handler = ResponseHandler::new("/tmp/dumps");
-        let log = handler.respond(100, "normal_app", 5.0, ActionType::LogOnly);
+        let log = handler.respond(100, "normal_app", None, 5.0, ActionType::LogOnly);
         assert!(!log.was_excluded);
         assert!(log.actions_taken.is_empty()); // LogOnly just logs, no action result
     }
@@ -160,7 +183,7 @@ mod tests {
     fn suspend_action() {
         let handler = ResponseHandler::new("/tmp/dumps");
         // This will fail on non-existent PID, but the action should be attempted
-        let log = handler.respond(999999, "test_proc", 60.0, ActionType::Suspend);
+        let log = handler.respond(999999, "test_proc", None, 60.0, ActionType::Suspend);
         assert_eq!(log.actions_taken.len(), 1);
         assert_eq!(log.actions_taken[0].action, ActionType::Suspend);
     }

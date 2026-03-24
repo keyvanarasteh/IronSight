@@ -10,6 +10,8 @@ use std::path::Path;
 pub struct SignatureResult {
     pub is_signed: Option<bool>,
     pub signer: Option<String>,
+    pub verified: Option<bool>,
+    pub method: String,
     pub platform_note: String,
 }
 
@@ -17,20 +19,36 @@ pub struct SignatureResult {
 pub fn verify_signature(path: &Path) -> SignatureResult {
     #[cfg(target_os = "linux")]
     {
-        // Linux: No universal code signing. Check if file is from a known package.
-        let path_str = path.to_string_lossy();
-        let is_system = path_str.starts_with("/usr/")
-            || path_str.starts_with("/bin/")
-            || path_str.starts_with("/sbin/");
+        let pkg_output = std::process::Command::new("dpkg")
+            .args(["-S", &path.to_string_lossy()])
+            .output();
+        
+        let package = match pkg_output {
+            Ok(out) if out.status.success() => {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                Some(stdout.split(':').next().unwrap_or("").trim().to_string())
+            },
+            _ => None,
+        };
+
+        let verified = if let Some(ref pkg) = package {
+            let verify = std::process::Command::new("dpkg")
+                .args(["--verify", pkg])
+                .output();
+            match verify {
+                Ok(out) => out.status.success(),
+                _ => false,
+            }
+        } else {
+            false
+        };
 
         SignatureResult {
-            is_signed: Some(is_system),
-            signer: if is_system {
-                Some("System package (heuristic)".into())
-            } else {
-                None
-            },
-            platform_note: "Linux: Using path-based heuristic (system paths = trusted)".into(),
+            is_signed: Some(package.is_some()),
+            signer: package,
+            verified: Some(verified),
+            method: "dpkg-verify".to_string(),
+            platform_note: "Linux: Using dpkg signature verification".into(),
         }
     }
 
@@ -40,6 +58,8 @@ pub fn verify_signature(path: &Path) -> SignatureResult {
         SignatureResult {
             is_signed: None,
             signer: None,
+            verified: None,
+            method: "authenticode".to_string(),
             platform_note: "Windows: Authenticode verification not yet implemented".into(),
         }
     }
@@ -50,6 +70,8 @@ pub fn verify_signature(path: &Path) -> SignatureResult {
         SignatureResult {
             is_signed: None,
             signer: None,
+            verified: None,
+            method: "codesign".to_string(),
             platform_note: "macOS: Code signing verification not yet implemented".into(),
         }
     }
@@ -59,6 +81,8 @@ pub fn verify_signature(path: &Path) -> SignatureResult {
         SignatureResult {
             is_signed: None,
             signer: None,
+            verified: None,
+            method: "unknown".to_string(),
             platform_note: "Unsupported platform for signature verification".into(),
         }
     }

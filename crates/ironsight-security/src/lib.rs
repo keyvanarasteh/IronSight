@@ -11,6 +11,7 @@ pub mod entropy;
 pub mod hash;
 pub mod path_analysis;
 pub mod signature;
+pub mod modules;
 
 pub use audit::{AuditResult, SecurityAudit};
 pub use entropy::{EntropyResult, EntropyRisk};

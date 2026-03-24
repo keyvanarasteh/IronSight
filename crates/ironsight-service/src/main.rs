@@ -10,51 +10,113 @@
 //!   ironsight --generate-config      Print default TOML config
 //!   ironsight --check-privileges     Show privilege status and exit
 //!   ironsight --watchdog-sentinel    Run as watchdog (internal)
+//!   ironsight --daemon               Run in continuous scanning mode
+//!   ironsight --json                 Output results as JSON
 
 mod config;
 mod privilege;
 mod watchdog;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+use std::sync::Arc;
 
+use anyhow::Result;
+use clap::Parser;
 use sysinfo::{ProcessRefreshKind, System, UpdateKind};
+use tokio::signal;
+use tracing::{info, warn, error};
 
-use ironsight_core::snapshot::build_snapshot;
+
+use ironsight_core::snapshot::{build_snapshot, ProcessSnapshot};
 use ironsight_core::ProcessInfo;
 use ironsight_heuristic::signals;
-use ironsight_heuristic::{HeuristicEngine, Signal, ThreatLevel};
+use ironsight_heuristic::{DecayEngine, HeuristicEngine, Signal, ThreatLevel};
 use ironsight_report::incident;
+use ironsight_response::{ActionType, ExclusionList, ResponseHandler};
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+#[derive(Parser)]
+#[command(name = "ironsight", version, about = "Endpoint Detection & Response")]
+struct Cli {
+    #[arg(long)]
+    config: Option<PathBuf>,
+
+    #[arg(long)]
+    pid: Option<u32>,
+
+    #[arg(long, default_value = "50")]
+    top: usize,
+
+    #[arg(long)]
+    json: bool,
+
+    #[arg(long)]
+    daemon: bool,
+
+    #[arg(long)]
+    watchdog_sentinel: bool,
+
+    #[arg(long)]
+    watch_pid: Option<u32>,
+
+    #[arg(long)]
+    watch_interval: Option<u64>,
+
+    #[arg(long)]
+    check_privileges: bool,
+
+    #[arg(long)]
+    generate_config: bool,
+}
+
+struct NetworkAuditCache;
+impl NetworkAuditCache {
+    fn scan_all() -> Result<Self> {
+        Ok(Self)
+    }
+    fn get_for_pid(&self, pid: u32) -> ironsight_network::audit::NetworkAudit {
+        ironsight_network::audit::NetworkAudit::scan_pid(pid)
+    }
+}
+
+pub struct ScanResult {
+    pub assessment: ironsight_heuristic::ThreatAssessment,
+    pub report: incident::IncidentReport,
+}
+
+pub struct ScanRunResult {
+    pub threat_count: usize,
+    pub results: Vec<ScanResult>,
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let cli = Cli::parse();
 
     // ── Watchdog sentinel mode (early exit) ──
-    if let Some(wd_args) = watchdog::parse_watchdog_args(&args) {
+    if cli.watchdog_sentinel {
         tracing_subscriber::fmt()
             .with_env_filter("ironsight=info")
             .init();
-        watchdog::run_sentinel_loop(wd_args.watch_pid, wd_args.interval, 5);
-        return;
+        if let Some(pid) = cli.watch_pid {
+            let interval = cli.watch_interval.unwrap_or(10);
+            watchdog::run_sentinel_loop(pid, Duration::from_secs(interval), 5);
+        }
+        return Ok(());
     }
 
     // ── Generate config (early exit) ──
-    if args.iter().any(|a| a == "--generate-config") {
+    if cli.generate_config {
         print!("{}", config::Config::default_toml());
-        return;
+        return Ok(());
     }
 
     // ── Load configuration ──
-    let cfg = if let Some(path) = parse_config_arg(&args) {
-        match config::Config::from_file(Path::new(&path)) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("❌ Config error: {e}");
-                return;
-            }
-        }
+    let cfg = Arc::new(if let Some(path) = cli.config.as_ref() {
+        config::Config::from_file(path)?
     } else {
         config::Config::discover()
-    };
+    });
 
     // ── Initialize logging from config ──
     let env_filter = tracing_subscriber::EnvFilter::from_default_env()
@@ -66,49 +128,101 @@ fn main() {
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     // ── Banner ──
-    println!();
-    println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║          🔬 IRONSIGHT — SecOps Forensics Toolkit           ║");
-    println!("║          v0.1.0 · by Keyvan Arasteh                        ║");
-    println!("╚══════════════════════════════════════════════════════════════╝");
-    println!();
+    if !cli.json {
+        println!();
+        println!("╔══════════════════════════════════════════════════════════════╗");
+        println!("║          🔬 IRONSIGHT — SecOps Forensics Toolkit           ║");
+        println!("║          v0.1.0 · by Keyvan Arasteh                        ║");
+        println!("╚══════════════════════════════════════════════════════════════╝");
+        println!();
+    }
 
     // ── Privilege check ──
     let priv_report = privilege::PrivilegeReport::check();
-    priv_report.display();
+    if !cli.json {
+        priv_report.display();
+    }
 
-    if args.iter().any(|a| a == "--check-privileges") {
-        return;
+    if cli.check_privileges {
+        return Ok(());
     }
 
     if priv_report.overall_level == privilege::PrivilegeLevel::Limited {
-        tracing::warn!("Running with limited privileges — some features may be degraded");
+        warn!("Running with limited privileges — some features may be degraded");
     }
 
     // ── Watchdog spawn ──
-    if cfg.watchdog.enabled {
+    if cfg.watchdog.enabled && !cli.daemon {
         let my_pid = std::process::id();
         match watchdog::spawn_sentinel(
             my_pid,
-            std::time::Duration::from_secs(cfg.watchdog.interval_secs),
+            Duration::from_secs(cfg.watchdog.interval_secs),
         ) {
             Ok(sentinel_pid) => {
-                tracing::info!("🐕 Watchdog sentinel spawned as PID {sentinel_pid}");
+                info!("🐕 Watchdog sentinel spawned as PID {sentinel_pid}");
             }
             Err(e) => {
-                tracing::warn!("Failed to spawn watchdog: {e}");
+                warn!("Failed to spawn watchdog: {e}");
             }
         }
     }
 
-    // ── Parse scan arguments ──
-    let target_pid = parse_pid_arg(&args);
-    let top_n = parse_top_arg(&args).unwrap_or(cfg.scan.top_n);
+    if cli.daemon {
+        run_daemon(cfg).await?;
+    } else {
+        let mut decay = DecayEngine::new();
+        let results = run_scan(Arc::clone(&cfg), &mut decay, cli.pid).await?;
+        display_results(results, cli.top, cli.json, &cfg)?;
+    }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Stage 1: Process Snapshot
-    // ─────────────────────────────────────────────────────────────────
-    println!("📸 Stage 1: Capturing process snapshot...");
+    Ok(())
+}
+
+async fn run_daemon(config: Arc<config::Config>) -> Result<()> {
+    let interval = Duration::from_secs(config.general.interval_secs);
+    let mut decay = DecayEngine::new();
+    
+    info!("Daemon mode started — interval: {}s", config.general.interval_secs);
+    
+    let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
+    
+    tokio::spawn(async move {
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+        tokio::select! {
+            _ = signal::ctrl_c() => {},
+            _ = sigterm.recv() => {},
+        }
+        info!("Shutdown signal received");
+        let _ = shutdown_tx.send(true);
+    });
+    
+    loop {
+        let scan_start = Instant::now();
+        let results = run_scan(Arc::clone(&config), &mut decay, None).await?;
+        let scan_duration = scan_start.elapsed();
+        
+        info!("Scan completed in {:?} — {} threats found", 
+              scan_duration, results.threat_count);
+        
+        tokio::select! {
+            _ = tokio::time::sleep(interval) => {},
+            _ = shutdown_rx.changed() => {
+                if *shutdown_rx.borrow() {
+                    info!("SIGTERM received, shutting down gracefully...");
+                    break;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn run_scan(
+    cfg: Arc<config::Config>,
+    decay: &mut DecayEngine,
+    target_pid: Option<u32>,
+) -> Result<ScanRunResult> {
+    info!("📸 Stage 1: Capturing process snapshot...");
     let mut sys = System::new();
     sys.refresh_processes_specifics(
         sysinfo::ProcessesToUpdate::All,
@@ -122,201 +236,267 @@ fn main() {
             .with_user(UpdateKind::OnlyIfNotSet),
     );
     let snapshot = build_snapshot(&sys);
-    println!("   Found {} processes", snapshot.processes.len());
-
-    let processes: Vec<&ProcessInfo> = if let Some(pid) = target_pid {
+    
+    let processes: Vec<ProcessInfo> = if let Some(pid) = target_pid {
         match snapshot.find_by_pid(pid) {
-            Some(p) => vec![p],
+            Some(p) => vec![p.clone()],
             None => {
-                eprintln!("❌ PID {pid} not found");
-                return;
+                anyhow::bail!("❌ PID {pid} not found");
             }
         }
     } else {
-        snapshot.processes.values().collect()
+        snapshot.processes.values().cloned().collect()
     };
 
-    // ─────────────────────────────────────────────────────────────────
-    // Stage 2–5: Analyze each process
-    // ─────────────────────────────────────────────────────────────────
-    let engine = HeuristicEngine::new();
-    let mut assessments: Vec<(ironsight_heuristic::ThreatAssessment, incident::IncidentReport)> =
-        Vec::new();
+    let engine = Arc::new(HeuristicEngine::new());
+    let net_cache = Arc::new(NetworkAuditCache::scan_all()?);
+    let mut ex_list = ExclusionList::default();
+    for n in &cfg.exclusions.names { ex_list.add_name(n); }
+    for p in &cfg.exclusions.paths { ex_list.path_prefixes.push(p.to_string()); }
+    for pid in &cfg.exclusions.pids { ex_list.add_pid(*pid); }
+    let exclusion_list = Arc::new(ex_list);
 
-    for proc_info in &processes {
-        // Check exclusions
-        if is_excluded(proc_info, &cfg.exclusions) {
-            continue;
+    let handles = processes.into_iter().map(|proc| {
+        let engine = Arc::clone(&engine);
+        let cfg = Arc::clone(&cfg);
+        let exclusion_list = Arc::clone(&exclusion_list);
+        let net_cache = Arc::clone(&net_cache);
+        tokio::spawn(async move {
+            scan_process(&proc, &cfg, &engine, &exclusion_list, &net_cache).await
+        })
+    });
+
+    let scanned: Vec<ScanResult> = futures::future::join_all(handles)
+        .await
+        .into_iter()
+        .filter_map(|r: Result<Option<ScanResult>, _>| r.ok())
+        .flatten()
+        .collect();
+
+    // ── Decay engine Integration & Auto Response ──
+    let mut active_results = Vec::new();
+    let mut threat_count = 0;
+    
+    for mut result in scanned {
+        let raw_score = result.assessment.score;
+        decay.record(result.assessment.pid, raw_score);
+        let effective_score = decay.get_score(result.assessment.pid).map(|d| d.decayed_score).unwrap_or(raw_score);
+        result.assessment.score = effective_score;
+        
+        if result.assessment.level >= ThreatLevel::Medium {
+            threat_count += 1;
         }
 
-        let mut sigs: Vec<Signal> = Vec::new();
-        let mut report = ironsight_report::IncidentReport::new();
-
-        // Fill process info
-        report.process = incident::ProcessInfo {
-            pid: proc_info.pid,
-            name: proc_info.name.clone(),
-            exe_path: proc_info
-                .exe
-                .as_ref()
-                .map(|p| p.to_string_lossy().into_owned()),
-            cmdline: if proc_info.cmd.is_empty() {
-                None
-            } else {
-                Some(proc_info.cmd.join(" "))
-            },
-            parent_pid: proc_info.parent_pid,
-            user: proc_info.uid.map(|u| format!("uid:{u}")),
-            cpu_percent: proc_info.cpu_percent,
-            memory_bytes: proc_info.memory_bytes,
-            start_time: None,
-        };
-
-        // ── Security Analysis ──
-        if cfg.scan.security {
-            if let Some(ref exe_path) = proc_info.exe {
-                let path = Path::new(exe_path);
-
-                // Entropy
-                if let Ok(result) = ironsight_security::entropy::compute_entropy(path) {
-                    report.security.entropy = Some(result.entropy);
-                    report.security.entropy_risk = Some(format!("{:?}", result.risk_level));
-                    if result.entropy > cfg.thresholds.entropy_alert {
-                        sigs.push(signals::high_entropy(result.entropy));
-                    }
-                }
-
-                // Hash
-                if let Ok(hash_result) = ironsight_security::hash::compute_sha256(path) {
-                    report.security.sha256 = Some(hash_result.sha256);
-                }
-
-                // Signature
-                let sig_result = ironsight_security::signature::verify_signature(path);
-                report.security.is_signed = sig_result.is_signed;
-                if sig_result.is_signed == Some(false) {
-                    sigs.push(signals::unsigned_binary());
-                }
-
-                // Path analysis
-                let path_result = ironsight_security::path_analysis::analyze_path(Some(path));
-                report.security.suspicious_path = path_result.is_suspicious;
-                if let Some(ref reason) = path_result.reason {
-                    report.security.flags.push(reason.clone());
-                }
-                if path_result.is_suspicious {
-                    let reason = path_result.reason.as_deref().unwrap_or("unknown");
-                    sigs.push(signals::suspicious_path(&path.to_string_lossy(), reason));
-                }
-            } else {
-                sigs.push(signals::fileless_process());
-            }
+        if cfg.thresholds.auto_response && effective_score >= 80.0 {
+            let handler = ResponseHandler::new(&cfg.general.report_dir)
+                .with_exclusions(exclusion_list.as_ref().clone());
+            
+            let exe_path = result.report.process.exe_path.clone();
+            let log = handler.respond(
+                result.assessment.pid, 
+                &result.assessment.name, 
+                exe_path.as_deref(),
+                result.assessment.score,
+                ActionType::SuspendDumpKill
+            );
+            info!("Auto-response executed: {:?}", log);
+            let mapped_actions: Vec<incident::ActionInfo> = log.actions_taken.into_iter().map(|a| incident::ActionInfo {
+                action_type: format!("{:?}", a.action),
+                success: a.success,
+                message: a.message,
+                timestamp: a.timestamp,
+            }).collect();
+            result.report.actions.extend(mapped_actions);
         }
-
-        // CPU spike
-        if proc_info.cpu_percent > cfg.thresholds.cpu_spike {
-            sigs.push(signals::cpu_spike(proc_info.cpu_percent));
-        }
-
-        // ── Network Analysis ──
-        if cfg.scan.network {
-            let net_audit = ironsight_network::audit::NetworkAudit::scan_pid(proc_info.pid);
-            report.network = incident::NetworkInfo {
-                total_sockets: net_audit.total_sockets,
-                listeners: net_audit.listeners.len(),
-                external_connections: net_audit.external_connections.len(),
-                suspicious_connections: net_audit.suspicious_connections.len(),
-                suspicious_ports: net_audit
-                    .suspicious_connections
-                    .iter()
-                    .map(|s| format!("{} ({})", s.socket.remote_port, s.intel.service))
-                    .collect(),
-            };
-
-            for conn in &net_audit.suspicious_connections {
-                sigs.push(signals::suspicious_port(
-                    conn.socket.remote_port,
-                    &conn.intel.service,
-                ));
-            }
-
-            if net_audit.external_connections.len() > 5 {
-                sigs.push(signals::external_connections(
-                    net_audit.external_connections.len(),
-                ));
-            }
-        }
-
-        // ── Memory Analysis ──
-        if cfg.scan.memory {
-            if let Ok(regions) = ironsight_memory::maps::read_maps(proc_info.pid) {
-                let summary = ironsight_memory::maps::summarize(proc_info.pid, &regions);
-                report.memory = incident::MemoryInfo {
-                    total_regions: summary.total_regions,
-                    wx_violations: summary.writable_executable_regions,
-                    anonymous_executable: summary.anonymous_executable_regions,
-                    pattern_matches: 0,
-                    flags: summary.flags.clone(),
-                };
-
-                if summary.writable_executable_regions > 0 {
-                    sigs.push(signals::wx_violation(
-                        summary.writable_executable_regions,
-                    ));
-                }
-                if summary.anonymous_executable_regions > 0 {
-                    sigs.push(signals::anonymous_executable(
-                        summary.anonymous_executable_regions,
-                    ));
-                }
-            }
-        }
-
-        // ── Heuristic Scoring ──
-        let assessment = engine.assess(proc_info.pid, &proc_info.name, sigs);
-
-        report.threat = incident::ThreatInfo {
-            score: assessment.score,
-            level: format!("{:?}", assessment.level),
-            signals: assessment
-                .signals
-                .iter()
-                .map(|s| incident::SignalInfo {
-                    name: s.name.clone(),
-                    category: format!("{:?}", s.category),
-                    weight: s.weight,
-                    description: s.description.clone(),
-                    evidence: s.evidence.clone(),
-                })
-                .collect(),
-            recommended_action: format!("{:?}", assessment.recommended_action),
-        };
-
-        assessments.push((assessment, report));
+        
+        active_results.push(result);
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Stage 6: Display results
-    // ─────────────────────────────────────────────────────────────────
-    // Sort by threat score (highest first)
+    Ok(ScanRunResult {
+        threat_count,
+        results: active_results,
+    })
+}
+
+async fn scan_process(
+    proc_info: &ProcessInfo,
+    cfg: &config::Config,
+    engine: &HeuristicEngine,
+    exclusion_list: &ExclusionList,
+    net_cache: &NetworkAuditCache,
+) -> Option<ScanResult> {
+    let exe_str = proc_info.exe.as_ref().map(|p| p.to_string_lossy());
+    if exclusion_list.is_excluded(&proc_info.name, proc_info.pid, exe_str.as_deref().map(|s| s.as_ref())) {
+        return None;
+    }
+
+    let mut sigs: Vec<Signal> = Vec::new();
+    let mut report = ironsight_report::IncidentReport::new();
+
+    report.process = incident::ProcessInfo {
+        pid: proc_info.pid,
+        name: proc_info.name.clone(),
+        exe_path: proc_info
+            .exe
+            .as_ref()
+            .map(|p| p.to_string_lossy().into_owned()),
+        cmdline: if proc_info.cmd.is_empty() {
+            None
+        } else {
+            Some(proc_info.cmd.join(" "))
+        },
+        parent_pid: proc_info.parent_pid,
+        user: proc_info.uid.map(|u| format!("uid:{u}")),
+        cpu_percent: proc_info.cpu_percent,
+        memory_bytes: proc_info.memory_bytes,
+        start_time: None,
+    };
+
+    // ── Security Analysis ──
+    if cfg.scan.security {
+        if let Some(ref exe) = proc_info.exe {
+            let path = Path::new(exe);
+            if let Ok(result) = ironsight_security::entropy::compute_entropy(path) {
+                report.security.entropy = Some(result.entropy);
+                report.security.entropy_risk = Some(format!("{:?}", result.risk_level));
+                if result.entropy > cfg.thresholds.entropy_alert {
+                    sigs.push(signals::high_entropy(result.entropy));
+                }
+            }
+            if let Ok(hash_result) = ironsight_security::hash::compute_sha256(path) {
+                report.security.sha256 = Some(hash_result.sha256);
+            }
+            let sig_result = ironsight_security::signature::verify_signature(path);
+            report.security.is_signed = sig_result.is_signed;
+            if sig_result.is_signed == Some(false) {
+                sigs.push(signals::unsigned_binary());
+            }
+            let path_result = ironsight_security::path_analysis::analyze_path(Some(path));
+            report.security.suspicious_path = path_result.is_suspicious;
+            if let Some(ref reason) = path_result.reason {
+                report.security.flags.push(reason.clone());
+            }
+            if path_result.is_suspicious {
+                let reason = path_result.reason.as_deref().unwrap_or("unknown");
+                sigs.push(signals::suspicious_path(&path.to_string_lossy(), reason));
+            }
+        } else {
+            sigs.push(signals::fileless_process());
+        }
+    }
+
+    if proc_info.cpu_percent > cfg.thresholds.cpu_spike {
+        sigs.push(signals::cpu_spike(proc_info.cpu_percent));
+    }
+
+    // ── Network Analysis ──
+    if cfg.scan.network {
+        let net_audit = net_cache.get_for_pid(proc_info.pid);
+        report.network = incident::NetworkInfo {
+            total_sockets: net_audit.total_sockets,
+            listeners: net_audit.listeners.len(),
+            external_connections: net_audit.external_connections.len(),
+            suspicious_connections: net_audit.suspicious_connections.len(),
+            suspicious_ports: net_audit
+                .suspicious_connections
+                .iter()
+                .map(|s| format!("{} ({})", s.socket.remote_port, s.intel.service))
+                .collect(),
+        };
+
+        for conn in &net_audit.suspicious_connections {
+            sigs.push(signals::suspicious_port(
+                conn.socket.remote_port,
+                &conn.intel.service,
+            ));
+        }
+        if net_audit.external_connections.len() > 5 {
+            sigs.push(signals::external_connections(
+                net_audit.external_connections.len(),
+            ));
+        }
+    }
+
+    // ── Memory Analysis ──
+    if cfg.scan.memory {
+        if let Ok(regions) = ironsight_memory::maps::read_maps(proc_info.pid) {
+            let summary = ironsight_memory::maps::summarize(proc_info.pid, &regions);
+            report.memory = incident::MemoryInfo {
+                total_regions: summary.total_regions,
+                wx_violations: summary.writable_executable_regions,
+                anonymous_executable: summary.anonymous_executable_regions,
+                pattern_matches: 0,
+                flags: summary.flags.clone(),
+            };
+            if summary.writable_executable_regions > 0 {
+                sigs.push(signals::wx_violation(
+                    summary.writable_executable_regions,
+                ));
+            }
+            if summary.anonymous_executable_regions > 0 {
+                sigs.push(signals::anonymous_executable(
+                    summary.anonymous_executable_regions,
+                ));
+            }
+            
+            let pattern_result = ironsight_memory::scanner::scan_process(proc_info.pid);
+            for m in &pattern_result.matches {
+                sigs.push(Signal::new(
+                    &format!("memory_pattern at 0x{:x}", m.region_start + m.offset as u64),
+                    ironsight_heuristic::SignalCategory::MemoryAnomaly,
+                    20.0,
+                    &m.context,
+                ));
+            }
+        }
+    }
+
+    let assessment = engine.assess(proc_info.pid, &proc_info.name, sigs);
+    report.threat = incident::ThreatInfo {
+        score: assessment.score,
+        level: format!("{:?}", assessment.level),
+        signals: assessment
+            .signals
+            .iter()
+            .map(|s| incident::SignalInfo {
+                name: s.name.clone(),
+                category: format!("{:?}", s.category),
+                weight: s.weight,
+                description: s.description.clone(),
+                evidence: s.evidence.clone(),
+            })
+            .collect(),
+        recommended_action: format!("{:?}", assessment.recommended_action),
+    };
+
+    Some(ScanResult { assessment, report })
+}
+
+fn display_results(run_res: ScanRunResult, top_n: usize, json_mode: bool, cfg: &config::Config) -> Result<()> {
+    let mut assessments = run_res.results;
     assessments.sort_by(|a, b| {
-        b.0.score
-            .partial_cmp(&a.0.score)
+        b.assessment.score
+            .partial_cmp(&a.assessment.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    // Summary
+    if json_mode {
+        let reports: Vec<_> = assessments.iter().take(top_n).map(|r| &r.report).collect();
+        println!("{}", serde_json::to_string_pretty(&reports)?);
+        return Ok(());
+    }
+
     let critical = assessments
         .iter()
-        .filter(|(a, _)| a.level == ThreatLevel::Critical)
+        .filter(|r| r.assessment.level == ThreatLevel::Critical)
         .count();
     let high = assessments
         .iter()
-        .filter(|(a, _)| a.level == ThreatLevel::High)
+        .filter(|r| r.assessment.level == ThreatLevel::High)
         .count();
     let medium = assessments
         .iter()
-        .filter(|(a, _)| a.level == ThreatLevel::Medium)
+        .filter(|r| r.assessment.level == ThreatLevel::Medium)
         .count();
 
     println!();
@@ -327,61 +507,44 @@ fn main() {
     println!("  🟠 Medium:       {medium}");
     println!();
 
-    // Top threats
-    println!(
-        "── Top {top_n} Threats ─────────────────────────────────────────────"
-    );
-    println!(
-        "  {:<8} {:<20} {:>6} {:<10} {}",
-        "PID", "NAME", "SCORE", "LEVEL", "SIGNALS"
-    );
+    println!("── Top {top_n} Threats ─────────────────────────────────────────────");
+    println!("  {:<8} {:<20} {:>6} {:<10} {}", "PID", "NAME", "SCORE", "LEVEL", "SIGNALS");
     println!("  {}", "─".repeat(70));
 
-    for (assessment, _report) in assessments.iter().take(top_n) {
-        if assessment.score < 1.0 {
-            continue;
-        }
-
-        let signal_names: Vec<&str> = assessment
-            .signals
-            .iter()
-            .map(|s| s.name.as_str())
-            .collect();
-
+    for res in assessments.iter().take(top_n) {
+        if res.assessment.score < 1.0 { continue; }
+        let signal_names: Vec<&str> = res.assessment.signals.iter().map(|s| s.name.as_str()).collect();
         println!(
             "  {:<8} {:<20} {:>5.0} {} {:<10} {}",
-            assessment.pid,
-            truncate(&assessment.name, 20),
-            assessment.score,
-            assessment.level.emoji(),
-            format!("{:?}", assessment.level),
-            signal_names.join(", ")
+            res.assessment.pid,
+            truncate(&res.assessment.name, 20),
+            res.assessment.score,
+            res.assessment.level.emoji(),
+            format!("{:?}", res.assessment.level),
+            truncate(&signal_names.join(", "), 40)
         );
     }
 
-    // Full reports for Critical/High threats
-    let serious: Vec<&(ironsight_heuristic::ThreatAssessment, incident::IncidentReport)> =
-        assessments
-            .iter()
-            .filter(|(a, _)| a.level >= ThreatLevel::High)
-            .collect();
+    let serious: Vec<&ScanResult> = assessments
+        .iter()
+        .filter(|r| r.assessment.level >= ThreatLevel::High)
+        .collect();
 
     if !serious.is_empty() {
         println!();
         println!("── Detailed Reports (High/Critical) ───────────────────────────\n");
-        for (_, report) in serious {
-            println!("{}", ironsight_report::to_text(report));
+        for res in serious {
+            println!("{}", ironsight_report::to_text(&res.report));
         }
     }
 
-    // Save JSON reports
     let report_dir = &cfg.general.report_dir;
     let _ = std::fs::create_dir_all(report_dir);
     let mut saved = 0;
-    for (assessment, report) in &assessments {
-        if assessment.score >= cfg.thresholds.export_min_score {
-            let path = format!("{report_dir}/incident_{}.json", report.process.pid);
-            if ironsight_report::save_json(report, &path).is_ok() {
+    for res in &assessments {
+        if res.assessment.score >= cfg.thresholds.export_min_score {
+            let path = format!("{report_dir}/incident_{}.json", res.report.process.pid);
+            if ironsight_report::save_json(&res.report, &path).is_ok() {
                 saved += 1;
             }
         }
@@ -392,64 +555,13 @@ fn main() {
 
     println!();
     println!("Done. IronSight scan complete.");
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-fn is_excluded(proc: &ProcessInfo, exclusions: &config::ExclusionConfig) -> bool {
-    if exclusions.pids.contains(&proc.pid) {
-        return true;
-    }
-    if exclusions
-        .names
-        .iter()
-        .any(|n| proc.name.to_lowercase() == n.to_lowercase())
-    {
-        return true;
-    }
-    if let Some(ref exe) = proc.exe {
-        let exe_str = exe.to_string_lossy();
-        if exclusions.paths.iter().any(|p| exe_str.starts_with(p)) {
-            return true;
-        }
-    }
-    false
+    Ok(())
 }
 
 fn truncate(s: &str, max: usize) -> String {
-    if s.len() > max {
-        format!("{}…", &s[..max - 1])
-    } else {
-        s.to_string()
+    if s.chars().count() <= max {
+        return s.to_string();
     }
-}
-
-fn parse_pid_arg(args: &[String]) -> Option<u32> {
-    args.windows(2).find_map(|w| {
-        if w[0] == "--pid" {
-            w[1].parse().ok()
-        } else {
-            None
-        }
-    })
-}
-
-fn parse_top_arg(args: &[String]) -> Option<usize> {
-    args.windows(2).find_map(|w| {
-        if w[0] == "--top" {
-            w[1].parse().ok()
-        } else {
-            None
-        }
-    })
-}
-
-fn parse_config_arg(args: &[String]) -> Option<String> {
-    args.windows(2).find_map(|w| {
-        if w[0] == "--config" {
-            Some(w[1].clone())
-        } else {
-            None
-        }
-    })
+    let truncated: String = s.chars().take(max - 1).collect();
+    format!("{}…", truncated)
 }
