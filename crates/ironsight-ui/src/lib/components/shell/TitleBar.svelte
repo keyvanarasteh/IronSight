@@ -40,6 +40,9 @@
 	let aiChatResponse = $state('');
 	let aiChatError = $state('');
 
+	// ── Close Confirmation Modal ─────────────────────────
+	let closeConfirmationOpen = $state(false);
+
 	// ── Tauri window controls ────────────────────────────
 	let isMaximized = $state(false);
 
@@ -67,7 +70,17 @@
 	}
 
 	async function close() {
-		await getCurrentWindow().close();
+		closeConfirmationOpen = true;
+	}
+
+	function confirmClose(result: {
+		button: string;
+		inputValues: string[];
+		checkboxChecked: boolean;
+	}) {
+		if (result.button === 'Quit') {
+			getCurrentWindow().close();
+		}
 	}
 
 	// ── AI Chat via WebSocket ────────────────────────────
@@ -166,14 +179,14 @@
 	data-tauri-drag-region
 	class="bg-titlebar-bg text-titlebar-fg border-titlebar-border z-50 flex h-10 shrink-0 items-center justify-between border-b px-3 select-none"
 >
-	<div class="flex items-center gap-4">
-		<div class="flex items-center gap-3 text-[12px] text-inherit opacity-80">
-			<svg class="h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+	<div data-tauri-drag-region class="flex items-center gap-4">
+		<div data-tauri-drag-region class="flex items-center gap-3 text-[12px] text-inherit opacity-80">
+			<svg data-tauri-drag-region class="h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
 				<path
 					d="M23.5 15.4l-3.8-3.8 3.8-3.9c.4-.4.4-1 0-1.4l-2.1-2.1c-.4-.4-1-.4-1.4 0l-5.1 5.1-3-3-1.1 1.1 3 3-5.3 5.3-3.2-3.2-1.1 1.1 3.2 3.2-1.9 1.9c-.4.4-.4 1 0 1.4l2.1 2.1c.4.4 1 .4 1.4 0l3.8-3.8 3.8 3.8c.4.4 1 .4 1.4 0l2.1-2.1c.5-.4.5-1.1.1-1.5z"
 				/>
 			</svg>
-			<div class="flex gap-0">
+			<div data-tauri-drag-region class="flex gap-0">
 				{#each menuItems as category, i (category.label)}
 					<div
 						class="menu-trigger relative"
@@ -222,7 +235,7 @@
 		</div>
 	</div>
 
-	<div class="relative mx-4 block max-w-xl flex-1">
+	<div data-tauri-drag-region class="relative mx-4 block max-w-xl flex-1 flex h-full items-center">
 		<button
 			onclick={() => (aiChatOpen = true)}
 			class="bg-foreground/5 hover:bg-foreground/10 border-titlebar-border relative m-0 flex h-6 w-full cursor-pointer items-center justify-center gap-2 rounded border text-[11px] text-inherit opacity-60 transition-colors hover:opacity-100"
@@ -235,8 +248,8 @@
 		</button>
 	</div>
 
-	<div class="flex items-center gap-4 opacity-80">
-		<div class="flex items-center gap-3 text-inherit">
+	<div data-tauri-drag-region class="flex items-center gap-4 opacity-80 h-full">
+		<div data-tauri-drag-region class="flex items-center gap-3 text-inherit h-full">
 			<button
 				class="m-0 cursor-pointer border-none bg-transparent p-0 text-inherit"
 				aria-label="Layout"
@@ -286,6 +299,17 @@
 		</div>
 	</div>
 </header>
+
+<Dialog
+	bind:open={closeConfirmationOpen}
+	title="Quit IronSight EDR?"
+	message="Are you sure you want to quit the application? Any active sessions will be closed."
+	buttons={[
+		{ label: 'Cancel', variant: 'secondary' },
+		{ label: 'Quit', variant: 'primary' }
+	]}
+	onsubmit={confirmClose}
+/>
 
 <Dialog
 	bind:open={aiChatOpen}

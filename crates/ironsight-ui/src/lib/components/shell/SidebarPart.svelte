@@ -146,6 +146,7 @@
 
 		<!-- Resize sash (like VSCode's base/browser/ui/sash/sash.ts) -->
 		{#if resizable}
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
 				class="w-[4px] shrink-0 cursor-col-resize transition-colors
 					{resizing ? 'bg-ring' : 'hover:bg-ring/50 bg-transparent'}"

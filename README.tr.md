@@ -4,7 +4,7 @@
 
 <h1 align="center">IronSight</h1>
 <p align="center">
-  <strong>Endpoint Detection & Response — A modular EDR system written in Rust</strong>
+  <strong>Endpoint Detection & Response — Rust ile yazılmış modüler EDR sistemi</strong>
 </p>
 
 <p align="center">
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="#installation"><img src="https://img.shields.io/badge/Installation-blue?style=for-the-badge" /></a>
-  <a href="#architecture"><img src="https://img.shields.io/badge/Architecture-purple?style=for-the-badge" /></a>
+  <a href="#kurulum"><img src="https://img.shields.io/badge/Kurulum-blue?style=for-the-badge" /></a>
+  <a href="#mimari"><img src="https://img.shields.io/badge/Mimari-purple?style=for-the-badge" /></a>
   <a href="#docker"><img src="https://img.shields.io/badge/Docker-blue?style=for-the-badge&logo=docker" /></a>
   <img src="https://img.shields.io/badge/Rust-2024_Edition-orange?style=for-the-badge&logo=rust" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
@@ -21,46 +21,45 @@
 
 ---
 
-## Table of Contents
+## İçindekiler
 
-- [About](#about)
-- [Architecture](#architecture)
-- [Requirements](#requirements)
-- [Installation](#installation)
+- [Hakkında](#hakkında)
+- [Mimari](#mimari)
+- [Gereksinimler](#gereksinimler)
+- [Kurulum](#kurulum)
   - [Linux](#linux-debianubuntuarch)
   - [macOS](#macos)
   - [Windows](#windows)
   - [Docker](#docker)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Development](#development)
-- [Testing](#testing)
-- [Project Status](#project-status)
-- [License](#license)
+- [Yapılandırma](#yapılandırma)
+- [Kullanım](#kullanım)
+- [Geliştirme](#geliştirme)
+- [Test](#test)
+- [Lisans](#lisans)
 
 ---
 
-## About
+## Hakkında
 
-**IronSight** is a modular Endpoint Detection & Response (EDR) system written in Rust. The system monitors processes in real-time, performs behavioral analysis, maps network connections, detects memory anomalies, and executes automated mitigations.
+**IronSight**, Rust ile yazılmış modüler bir Endpoint Detection & Response (EDR) sistemidir. Sistem process'leri gerçek zamanlı izler, davranışsal analiz yapar, ağ bağlantılarını haritalandırır, bellek anomalilerini tespit eder ve otomatik müdahale gerçekleştirir.
 
-### Core Features
+### Temel Özellikler
 
-| Feature | Description |
+| Özellik | Açıklama |
 |---------|----------|
-| 🔍 **Process Monitoring** | Analysis of CPU, memory, network, and file paths for all processes |
-| 🎯 **Heuristic Engine** | 6 categories × multiple signals → composite threat score |
-| 🧠 **Memory Forensics** | W^X violation detection, anonymous executable region scanning |
-| 🌐 **Network Intelligence** | Socket-PID mapping, suspicious port detection |
-| 🔒 **Binary Security** | SHA-256 hashing, Shannon entropy, signature verification |
-| ⚡ **Kernel Monitoring** | Syscall tracking via eBPF tracepoints (Linux) |
-| 🛡️ **Automated Response** | Forensic sequence: Suspend → Dump → Kill |
-| 📊 **Reporting** | JSON/Text output, SIEM export (Splunk/Sentinel) |
+| 🔍 **Process İzleme** | Tüm process'lerin CPU, bellek, ağ, dosya yolu analizi |
+| 🎯 **Heuristic Engine** | 6 kategori × çoklu sinyal → composite tehdit skoru |
+| 🧠 **Bellek Forensics** | W^X ihlal tespiti, anonymous executable bölge tarama |
+| 🌐 **Ağ İstihbaratı** | Socket-PID haritalama, şüpheli port tespiti |
+| 🔒 **Binary Güvenlik** | SHA-256 hash, Shannon entropy, imza doğrulama |
+| ⚡ **Kernel İzleme** | eBPF tracepoint'ler ile syscall izleme (Linux) |
+| 🛡️ **Otomatik Müdahale** | Forensik sıra: Suspend → Dump → Kill |
+| 📊 **Raporlama** | JSON/Text çıktı, SIEM export (Splunk/Sentinel) |
 | 🐕 **Watchdog** | Anti-tamper sentinel process |
 
 ---
 
-## Architecture
+## Mimari
 
 ```
 ironsight/
@@ -83,7 +82,7 @@ ironsight/
 └── Makefile
 ```
 
-### Data Flow
+### Veri Akışı
 
 ```
 Config → Privilege Check → Process Snapshot
@@ -100,82 +99,82 @@ Config → Privilege Check → Process Snapshot
 
 ---
 
-## Requirements
+## Gereksinimler
 
-### All Platforms — Common
+### Tüm Platformlar — Ortak
 
-| Requirement | Minimum | Recommended |
+| Gereksinim | Minimum | Önerilen |
 |-----------|---------|----------|
 | **Rust** | 1.82.0 | 1.83.0+ (edition 2024) |
-| **Cargo** | Included with Rust | — |
-| **Git** | 2.0+ | Latest version |
-| **Memory** | 128 MB | 512 MB |
-| **Disk** | 100 MB | 500 MB (including dumps) |
+| **Cargo** | Rust ile gelir | — |
+| **Git** | 2.0+ | Son sürüm |
+| **Bellek** | 128 MB | 512 MB |
+| **Disk** | 100 MB | 500 MB (dump'lar dahil) |
 
 ### Linux (Debian/Ubuntu/Arch)
 
-| Requirement | Package | Purpose |
+| Gereksinim | Paket | Amaç |
 |-----------|-------|------|
-| **GCC/Clang** | `build-essential` | Rust native compilation |
-| **pkg-config** | `pkg-config` | Library discovery |
+| **GCC/Clang** | `build-essential` | Rust native derleme |
+| **pkg-config** | `pkg-config` | Kütüphane keşfi |
 | **OpenSSL** | `libssl-dev` | TLS/HTTPS (reqwest) |
-| **procfs** | Kernel built-in | `/proc` filesystem access |
-| **CAP_SYS_PTRACE** | — | Process memory reading |
-| **CAP_KILL** | — | Sending process signals |
-| **root or sudo** | — | Full process access |
+| **procfs** | Kernel built-in | `/proc` filesystem erişimi |
+| **CAP_SYS_PTRACE** | — | Process bellek okuma |
+| **CAP_KILL** | — | Process sinyal gönderme |
+| **root veya sudo** | — | Tam process erişimi için |
 
-**Optional (For Kernel module):**
+**Opsiyonel (Kernel modülü için):**
 
-| Requirement | Package | Purpose |
+| Gereksinim | Paket | Amaç |
 |-----------|-------|------|
-| **clang** | `clang` | eBPF compilation |
-| **llvm** | `llvm` | eBPF tools |
-| **libbpf** | `libbpf-dev` | eBPF library |
-| **linux-headers** | `linux-headers-$(uname -r)` | Kernel headers |
+| **clang** | `clang` | eBPF derleme |
+| **llvm** | `llvm` | eBPF araçları |
+| **libbpf** | `libbpf-dev` | eBPF kütüphanesi |
+| **linux-headers** | `linux-headers-$(uname -r)` | Kernel header'ları |
 
 ### macOS
 
-| Requirement | How to install | Purpose |
+| Gereksinim | Nasıl | Amaç |
 |-----------|-------|------|
 | **Xcode CLT** | `xcode-select --install` | C compiler, linker |
-| **Homebrew** | [brew.sh](https://brew.sh) | Package manager |
+| **Homebrew** | [brew.sh](https://brew.sh) | Paket yöneticisi |
 | **OpenSSL** | `brew install openssl@3` | TLS/HTTPS |
-| **pkg-config** | `brew install pkg-config` | Library discovery |
+| **pkg-config** | `brew install pkg-config` | Kütüphane keşfi |
 
-> ⚠️ **Note:** macOS does not have `/proc`. Memory and network analysis operates via the `sysinfo` crate. Kernel monitoring requires `dtrace` or the `Endpoint Security Framework`.
+> ⚠️ **Not:** macOS'ta `/proc` yoktur. Bellek ve ağ analizi `sysinfo` crate üzerinden çalışır. Kernel izleme `dtrace`/`Endpoint Security Framework` gerektirir.
 
 ### Windows
 
-| Requirement | How to install | Purpose |
+| Gereksinim | Nasıl | Amaç |
 |-----------|-------|------|
 | **Visual Studio Build Tools** | [vs.dev](https://visualstudio.microsoft.com/downloads/) | MSVC compiler |
 | **Rust (MSVC)** | `rustup default stable-x86_64-pc-windows-msvc` | Windows ABI |
-| **OpenSSL** | `vcpkg install openssl` or `choco install openssl` | TLS/HTTPS |
-| **Git for Windows** | [git-scm.com](https://git-scm.com) | Source control |
+| **OpenSSL** | `vcpkg install openssl` veya `choco install openssl` | TLS/HTTPS |
+| **Git for Windows** | [git-scm.com](https://git-scm.com) | Kaynak kontrolü |
 
-> ⚠️ **Note:** Windows does not have `/proc`. Process and network details are gathered via `sysinfo` + Windows API. Kernel monitoring requires ETW (Event Tracing for Windows).
+> ⚠️ **Not:** Windows'ta `/proc` yoktur. Process ve ağ bilgileri `sysinfo` + Windows API üzerinden alınır. Kernel izleme ETW (Event Tracing for Windows) gerektirir.
 
-**Optional (ETW Support):**
+**Opsiyonel (ETW desteği):**
 
-| Requirement | Purpose |
+| Gereksinim | Amaç |
 |-----------|------|
-| Windows SDK | ETW API access |
-| Administrator privileges | Kernel event trace session |
+| Windows SDK | ETW API erişimi |
+| Administrator privileges | Kernel event trace oturumu |
 
 ---
 
-## Installation
+## Kurulum
 
-### Rust Setup (All Platforms)
+### Rust Kurulumu (Tüm Platformlar)
 
 ```bash
-# Install Rust via rustup
+# rustup ile Rust kur
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Check minimum version
-rustc --version  # Must be >= 1.82.0
+# Minimum sürüm kontrolü
+rustc --version  # >= 1.82.0 olmalı
 
-# Nightly might be required (for edition 2024 features)
+# Nightly gerekebilir (edition 2024 için)
 rustup toolchain install nightly
 rustup default nightly
 ```
@@ -185,37 +184,37 @@ rustup default nightly
 ### Linux (Debian/Ubuntu)
 
 ```bash
-# 1. System dependencies
+# 1. Sistem bağımlılıkları
 sudo apt update
 sudo apt install -y build-essential pkg-config libssl-dev cmake git
 
-# 2. (Optional) For eBPF development
+# 2. (Opsiyonel) eBPF geliştirme için
 sudo apt install -y clang llvm libbpf-dev linux-headers-$(uname -r)
 
-# 3. Clone the project
+# 3. Projeyi klonla
 git clone https://github.com/keyvanarasteh/IronSight.git
 cd IronSight
 
-# 4. Build
+# 4. Derle
 cargo build --release
 
-# 5. Install the binary
+# 5. Binary'yi yükle
 sudo cp target/release/ironsight /usr/local/bin/
 sudo chmod +x /usr/local/bin/ironsight
 
-# 6. Create config directories
+# 6. Config dizini oluştur
 sudo mkdir -p /etc/ironsight
 sudo cp docker/ironsight.toml /etc/ironsight/config.toml
 
-# 7. Report and dump directories
+# 7. Rapor ve dump dizinleri
 sudo mkdir -p /var/lib/ironsight/{reports,dumps}
 sudo chmod 700 /var/lib/ironsight/dumps
 
-# 8. Run (requires root)
+# 8. Çalıştır (root gerekir)
 sudo ironsight --config /etc/ironsight/config.toml
 
-# 9. (Optional) Privilege capabilities
-# To run without root:
+# 9. (Opsiyonel) Privilege capabilities
+# Root olmadan çalıştırmak için:
 sudo setcap cap_sys_ptrace,cap_kill,cap_dac_read_search+ep /usr/local/bin/ironsight
 ironsight --config /etc/ironsight/config.toml
 ```
@@ -223,13 +222,13 @@ ironsight --config /etc/ironsight/config.toml
 ### Linux (Arch/Manjaro)
 
 ```bash
-# 1. System dependencies
+# 1. Sistem bağımlılıkları
 sudo pacman -S base-devel openssl pkg-config cmake git
 
-# 2. (Optional) eBPF
+# 2. (Opsiyonel) eBPF
 sudo pacman -S clang llvm libbpf linux-headers
 
-# 3-9. Same steps as above
+# 3-9. Yukarıdaki adımların aynısı
 git clone https://github.com/keyvanarasteh/IronSight.git
 cd IronSight
 cargo build --release
@@ -239,14 +238,14 @@ sudo cp target/release/ironsight /usr/local/bin/
 ### Linux (Fedora/RHEL)
 
 ```bash
-# 1. System dependencies
+# 1. Sistem bağımlılıkları
 sudo dnf groupinstall "Development Tools"
 sudo dnf install openssl-devel pkg-config cmake git
 
-# 2. (Optional) eBPF
+# 2. (Opsiyonel) eBPF
 sudo dnf install clang llvm libbpf-devel kernel-devel
 
-# 3-9. Same steps as above
+# 3-9. Yukarıdaki adımların aynısı
 ```
 
 ---
@@ -257,30 +256,30 @@ sudo dnf install clang llvm libbpf-devel kernel-devel
 # 1. Xcode Command Line Tools
 xcode-select --install
 
-# 2. Dependencies via Homebrew
+# 2. Homebrew ile bağımlılıklar
 brew install openssl@3 pkg-config cmake
 
-# 3. Export OpenSSL paths for Rust
+# 3. OpenSSL'i Rust'a tanıt
 export OPENSSL_DIR=$(brew --prefix openssl@3)
 export PKG_CONFIG_PATH="$OPENSSL_DIR/lib/pkgconfig"
 
-# 4. Clone and build
+# 4. Projeyi klonla ve derle
 git clone https://github.com/keyvanarasteh/IronSight.git
 cd IronSight
 cargo build --release
 
-# 5. Install
+# 5. Kur
 sudo cp target/release/ironsight /usr/local/bin/
 
 # 6. Config
 mkdir -p ~/.config/ironsight
 cp docker/ironsight.toml ~/.config/ironsight/config.toml
 
-# 7. Run (requires sudo)
+# 7. Çalıştır (sudo gerekir)
 sudo ironsight --config ~/.config/ironsight/config.toml
 ```
 
-> 💡 **macOS Tip:** Add this to your `.zshrc` or `.bashrc`:
+> 💡 **macOS Tip:** `.zshrc` veya `.bashrc` dosyanıza ekleyin:
 > ```bash
 > export OPENSSL_DIR=$(brew --prefix openssl@3)
 > export PKG_CONFIG_PATH="$OPENSSL_DIR/lib/pkgconfig"
@@ -291,21 +290,21 @@ sudo ironsight --config ~/.config/ironsight/config.toml
 ### Windows
 
 ```powershell
-# 1. Install Visual Studio Build Tools
+# 1. Visual Studio Build Tools kur
 # https://visualstudio.microsoft.com/downloads/ → Build Tools
-# Select the "Desktop development with C++" workload
+# "Desktop development with C++" workload'unu seç
 
-# 2. Dependencies via Chocolatey (PowerShell Admin)
+# 2. Chocolatey ile bağımlılıklar (PowerShell Admin)
 choco install git cmake openssl
 
-# 3. Install Rust (MSVC)
+# 3. Rust kur (MSVC)
 # https://rustup.rs → rustup-init.exe
 rustup default stable-x86_64-pc-windows-msvc
 
-# 4. OpenSSL environment variables
+# 4. OpenSSL ortam değişkeni
 $env:OPENSSL_DIR = "C:\Program Files\OpenSSL-Win64"
 
-# 5. Clone and build
+# 5. Projeyi klonla ve derle
 git clone https://github.com/keyvanarasteh/IronSight.git
 cd IronSight
 cargo build --release
@@ -314,7 +313,7 @@ cargo build --release
 mkdir "$env:APPDATA\ironsight"
 copy docker\ironsight.toml "$env:APPDATA\ironsight\config.toml"
 
-# 7. Run (as Administrator)
+# 7. Çalıştır (Administrator olarak)
 .\target\release\ironsight.exe --config "$env:APPDATA\ironsight\config.toml"
 ```
 
@@ -322,63 +321,63 @@ copy docker\ironsight.toml "$env:APPDATA\ironsight\config.toml"
 
 ### Docker
 
-The fastest way to get started:
+En hızlı başlangıç yöntemi:
 
 ```bash
-# 1. Clone
+# 1. Klonla
 git clone https://github.com/keyvanarasteh/IronSight.git
 cd IronSight
 
-# 2. Generate Config
+# 2. Config oluştur
 make config
-# → Edit config/ironsight.toml
+# → config/ironsight.toml dosyasını düzenle
 
-# 3. Build and Start
+# 3. Derle ve başlat
 make build
 make up
 
-# 4. (Optional) With Grafana monitoring
+# 4. (Opsiyonel) Grafana monitoring ile
 make monitor
 # → http://localhost:3000 (admin/ironsight)
 
-# 5. View logs
+# 5. Logları izle
 make logs
 
-# 6. Stop
+# 6. Durdur
 make down
 ```
 
-**Manual Docker commands:**
+**Manuel Docker komutları:**
 
 ```bash
-# Build
+# Derle
 docker compose build
 
-# Start (scanner + sentinel)
+# Başlat (scanner + sentinel)
 docker compose up -d ironsight sentinel
 
-# With monitoring stack
+# Monitoring stack ile
 docker compose --profile monitoring up -d
 
-# Status
+# Durum
 docker compose ps
 
-# Logs
+# Loglar
 docker compose logs -f ironsight
 ```
 
 ---
 
-## Configuration
+## Yapılandırma
 
-IronSight uses a TOML configuration file. The lookup order is:
+IronSight, TOML formatında yapılandırma dosyası kullanır. Arama sırası:
 
-1. `--config <path>` CLI argument
-2. `./ironsight.toml` (current directory)
-3. `/etc/ironsight/config.toml` (Linux global)
-4. `~/.config/ironsight/config.toml` (User local)
+1. `--config <path>` CLI argümanı
+2. `./ironsight.toml` (çalışma dizini)
+3. `/etc/ironsight/config.toml` (Linux)
+4. `~/.config/ironsight/config.toml` (kullanıcı)
 
-### Example Config
+### Örnek Config
 
 ```toml
 [general]
@@ -387,19 +386,19 @@ report_dir = "/var/lib/ironsight/reports"
 dump_dir = "/var/lib/ironsight/dumps"
 
 [scan]
-interval_secs = 300         # Scan interval in daemon mode
-top_n = 50                  # Max process count to report
-daemon_mode = false         # true: run continuously
+interval_secs = 300         # Daemon modunda tarama aralığı
+top_n = 50                  # En fazla X process raporla
+daemon_mode = false         # true: sürekli çalış
 
 [thresholds]
 low_score = 10              # 0-10: Clean, 11-30: Low
 medium_score = 30           # 31-50: Medium
 high_score = 50             # 51-70: High
 critical_score = 70         # 71-100: Critical
-export_min_score = 10       # Minimum score for report generation
+export_min_score = 10       # Rapor oluşturma minimum skoru
 
 [response]
-auto_response = false       # Automatic mitigation enabled
+auto_response = false       # Otomatik müdahale
 auto_response_min_score = 70
 
 [exclusions]
@@ -417,30 +416,30 @@ max_restarts = 3
 
 ---
 
-## Usage
+## Kullanım
 
-### CLI Commands
+### CLI Komutları
 
 ```bash
-# Basic one-off scan
+# Temel tarama (tek sefer)
 sudo ironsight
 
-# Scan a specific PID
+# Belirli PID tara
 sudo ironsight --pid 666
 
-# Show the highest scoring N threats
+# En yüksek N threat'i göster
 sudo ironsight --top 10
 
-# Use a custom config
+# Özel config ile
 sudo ironsight --config /path/to/config.toml
 
-# Privilege check
+# Yetki kontrolü
 ironsight --check-privileges
 
-# Generate example config
+# Örnek config oluştur
 ironsight --generate-config > ironsight.toml
 
-# Sentinel (watchdog) mode
+# Sentinel (watchdog) modu
 sudo ironsight --sentinel
 ```
 
@@ -475,19 +474,19 @@ sudo systemctl status ironsight
 
 ---
 
-## Development
+## Geliştirme
 
 ```bash
-# Build all crates
+# Tüm crate'leri derle
 cargo build --workspace
 
-# Only build the service binary
+# Sadece service binary
 cargo build --release --package ironsight-service
 
-# Single crate test
+# Tek crate testi
 cargo test --package ironsight-heuristic
 
-# All tests
+# Tüm testler
 cargo test --workspace
 
 # Lint
@@ -496,54 +495,54 @@ cargo clippy --workspace -- -W warnings
 # Format
 cargo fmt --all
 
-# Hot-reload development (cargo-watch)
+# Hot-reload geliştirme (cargo-watch)
 cargo install cargo-watch
 cargo watch -x "run --package ironsight-service"
 ```
 
 ---
 
-## Testing
+## Test
 
 ```bash
-# All workspace tests
+# Tüm workspace testleri
 cargo test --workspace
 
-# Specific crate tests
+# Belirli bir crate
 cargo test --package ironsight-core
 cargo test --package ironsight-heuristic
 cargo test --package ironsight-memory
 cargo test --package ironsight-network
 cargo test --package ironsight-security
 
-# Specific test function
+# Belirli test fonksiyonu
 cargo test --package ironsight-heuristic -- decay
 
-# Verbose output
+# Verbose çıktı
 cargo test --workspace -- --nocapture
 ```
 
 ---
 
-## Project Status
+## Proje Durumu
 
-| Crate | Status | Notes |
+| Crate | Durum | Not |
 |-------|-------|-----|
-| ironsight-core | ✅ Working | Process spy, snapshot, control |
-| ironsight-heuristic | ✅ Working | Scoring + decay engine |
-| ironsight-memory | ✅ Working | maps parsing, W^X detection |
-| ironsight-network | ✅ Working | Socket mapping |
-| ironsight-report | ✅ Working | JSON/Text reporting |
-| ironsight-response | ✅ Working | Suspend → Dump → Kill |
-| ironsight-security | ✅ Working | Hash, entropy, path analysis |
-| ironsight-service | ✅ Working | CLI orchestrator |
-| ironsight-kernel | 🚧 Stub | eBPF implementation pending |
-| ironsight-ui | 🚧 WIP | Dioxus desktop dashboard |
+| ironsight-core | ✅ Çalışıyor | Process spy, snapshot, control |
+| ironsight-heuristic | ✅ Çalışıyor | Scoring + decay engine |
+| ironsight-memory | ✅ Çalışıyor | maps parsing, W^X detection |
+| ironsight-network | ✅ Çalışıyor | Socket mapping |
+| ironsight-report | ✅ Çalışıyor | JSON/Text raporlama |
+| ironsight-response | ✅ Çalışıyor | Suspend → Dump → Kill |
+| ironsight-security | ✅ Çalışıyor | Hash, entropy, path analysis |
+| ironsight-service | ✅ Çalışıyor | CLI orchestrator |
+| ironsight-kernel | 🚧 Stub | eBPF implementasyon bekliyor |
+| ironsight-ui | 🚧 Devam | Dioxus desktop dashboard |
 
 ---
 
-## License
+## Lisans
 
 MIT License — [LICENSE](LICENSE)
 
-**Author:** Keyvan Arasteh · İstinye University
+**Yazar:** Keyvan Arasteh · İstinye Üniversitesi

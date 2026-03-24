@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a bug or issue with IronSight EDR
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: bug-type
+    attributes:
+      label: Bug Type
+      options:
+        - Regression (was working, now broken)
+        - Crash / Panic
+        - Behavioral Bug
+        - UI / Dashboard Issue
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Summary
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Start IronSight running...
+        2. Execute the following binary...
+        3. Observe that...
+    validations:
+      required: true
+  - type: dropdown
+    id: affected-crate
+    attributes:
+      label: Affected Crate
+      description: Which crate is causing the issue? (If known)
+      options:
+        - Unknown
+        - ironsight-core
+        - ironsight-security
+        - ironsight-network
+        - ironsight-memory
+        - ironsight-kernel
+        - ironsight-heuristic
+        - ironsight-response
+        - ironsight-report
+        - ironsight-service
+        - ironsight-ui
+  - type: input
+    id: env-os
+    attributes:
+      label: Operating System
+      description: e.g. Ubuntu 22.04 LTS, Windows 11, macOS 14.3
+    validations:
+      required: true
+  - type: input
+    id: env-rust
+    attributes:
+      label: Rust Version
+      description: The output of `rustc -V`
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Evidence / Logs
+      description: Please paste any relevant crash logs, terminal output, or screenshots.
+      render: shell
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity / Impact
+      options:
+        - Critical (system-wide crash / unusable)
+        - High (core feature broken)
+        - Medium (isolated feature broken or workaround exists)
+        - Low (annoying visual bug / UI glitch)
+    validations:
+      required: true

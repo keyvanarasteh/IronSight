@@ -1,0 +1,45 @@
+name: Feature Request
+description: Propose a new feature, improvement, or architecture change
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Summary / Problem
+      description: Describe the problem that this feature would solve.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How should this feature work? What would the architecture look like?
+    validations:
+      required: true
+  - type: dropdown
+    id: affected-crate
+    attributes:
+      label: Primary Affected Crate
+      options:
+        - Workspace / Global
+        - ironsight-core
+        - ironsight-security
+        - ironsight-network
+        - ironsight-memory
+        - ironsight-kernel
+        - ironsight-heuristic
+        - ironsight-response
+        - ironsight-report
+        - ironsight-service
+        - ironsight-ui
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches did you consider?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Will this require new OS privileges, breaking API changes, or heavy dependencies?
