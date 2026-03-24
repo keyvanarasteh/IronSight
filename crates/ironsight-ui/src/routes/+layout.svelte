@@ -254,56 +254,28 @@
 		color: oklch(0.7 0.15 200);
 	}
 
-	/* Vertical scrollbar */
+	/* Scrollbar — scoped to scrollable containers only */
 	:global(::-webkit-scrollbar) {
-		width: 14px;
-		height: 14px;
+		width: 10px;
+		height: 10px;
 	}
 	:global(::-webkit-scrollbar-track) {
 		background: transparent;
 	}
 	:global(::-webkit-scrollbar-thumb) {
 		background: rgba(121, 121, 121, 0.4);
-		border: 3px solid transparent;
-		background-clip: padding-box;
-		border-radius: 7px;
+		border-radius: 5px;
 	}
 	:global(::-webkit-scrollbar-thumb:hover) {
 		background: rgba(100, 100, 100, 0.7);
-		border: 3px solid transparent;
-		background-clip: padding-box;
-	}
-	:global(::-webkit-scrollbar-thumb:active) {
-		background: rgba(191, 191, 191, 0.4);
-		border: 3px solid transparent;
-		background-clip: padding-box;
 	}
 	:global(::-webkit-scrollbar-corner) {
 		background: transparent;
 	}
 
-	/* Firefox scrollbar */
-	:global(*) {
+	/* Firefox scrollbar — only on containers that scroll */
+	:global([style*="overflow"], .overflow-y-auto, .overflow-x-auto, .overflow-auto) {
 		scrollbar-width: thin;
 		scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
-	}
-
-	/* Sidebar tree scrollbar overrides */
-	:global(.sidebar-scroll::-webkit-scrollbar) {
-		width: 10px;
-	}
-	:global(.sidebar-scroll::-webkit-scrollbar-thumb) {
-		border: 2px solid transparent;
-		border-radius: 5px;
-	}
-
-	/* Panel scrollbar */
-	:global(.panel-content::-webkit-scrollbar) {
-		width: 10px;
-		height: 10px;
-	}
-	:global(.panel-content::-webkit-scrollbar-thumb) {
-		border: 2px solid transparent;
-		border-radius: 5px;
 	}
 </style>
