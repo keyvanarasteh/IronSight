@@ -4,6 +4,7 @@ use dioxus_primitives::slider::SliderValue;
 use dioxus_primitives::checkbox::CheckboxState;
 
 use dioxus::prelude::*;
+use crate::components::aspect_ratio::*;
 use crate::components::accordion::*;
 use crate::components::alert_dialog::*;
 use crate::components::avatar::*;
@@ -13,11 +14,14 @@ use crate::components::card::*;
 use crate::components::checkbox::*;
 use crate::components::collapsible::*;
 use crate::components::dialog::*;
+use crate::components::hover_card::*;
 use crate::components::input::*;
 use crate::components::label::*;
+use crate::components::pagination::*;
 use crate::components::popover::*;
 use crate::components::progress::*;
 use crate::components::radio_group::*;
+use crate::components::scroll_area::*;
 use crate::components::select::*;
 use crate::components::separator::*;
 use crate::components::skeleton::*;
@@ -28,6 +32,13 @@ use crate::components::textarea::*;
 use crate::components::toggle::*;
 use crate::components::toggle_group::*;
 use crate::components::tooltip::*;
+use crate::components::visualize::chart::*;
+use crate::components::visualize::code_block::*;
+use crate::components::visualize::document_viewer::*;
+use crate::components::visualize::flow_graph::*;
+use crate::components::visualize::markdown_view::*;
+use crate::components::visualize::rest_endpoint::*;
+use crate::components::visualize::service_card::*;
 
 const SHOWCASE_CSS: &str = r#"
 .showcase-page { padding: 32px; overflow-y: auto; height: 100%; }
@@ -91,17 +102,20 @@ pub fn Showcase() -> Element {
             div { class: "showcase-layout",
                 ShowcaseAccordion {}
                 ShowcaseAlertDialog {}
-                // ShowcaseAspectRatio {} // Placeholder, can be added later
+                ShowcaseAspectRatio {}
                 ShowcaseAvatar {}
                 ShowcaseBadges {}
                 ShowcaseButtons {}
                 ShowcaseCards {}
+                ShowcaseHoverCard {}
                 ShowcaseInputs {}
                 ShowcaseCheckboxSwitch {}
                 ShowcaseProgress {}
+                ShowcaseScrollArea {}
                 ShowcaseSlider {}
                 ShowcaseSkeleton {}
                 ShowcaseSeparator {}
+                ShowcasePagination {}
                 ShowcaseRadioGroup {}
                 ShowcaseSelect {}
                 ShowcaseTabs {}
@@ -112,6 +126,13 @@ pub fn Showcase() -> Element {
                 ShowcasePopover {}
                 ShowcaseDialog {}
                 ShowcaseTextarea {}
+                ShowcaseChart {}
+                ShowcaseCodeBlock {}
+                ShowcaseDocumentViewer {}
+                ShowcaseFlowGraph {}
+                ShowcaseMarkdown {}
+                ShowcaseRestEndpoint {}
+                ShowcaseServiceCards {}
             }
         }
     }
@@ -672,6 +693,224 @@ fn ShowcaseTextarea() -> Element {
                 div { style: "width: 100%;",
                     span { class: "showcase-label", "Outline" }
                     Textarea { variant: TextareaVariant::Outline, placeholder: "Enter notes...", rows: "3" }
+                }
+            }
+        }
+    }
+}
+
+// ── HoverCard ──
+
+#[component]
+fn ShowcaseHoverCard() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Hover Card" }
+            p { class: "desc", "Preview content on hover" }
+            HoverCard {
+                HoverCardTrigger {
+                    Button { variant: ButtonVariant::Outline, "Hover over me" }
+                }
+                HoverCardContent {
+                    div { style: "padding: 12px; width: 240px;",
+                        p { style: "font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--text-primary);", "Process Details" }
+                        p { style: "font-size: 12px; color: var(--text-muted);", "PID: 1337 | User: root" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Pagination ──
+
+#[component]
+fn ShowcasePagination() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Pagination" }
+            p { class: "desc", "Page navigation controls" }
+            Pagination {
+                PaginationContent {
+                    PaginationItem { PaginationPrevious {} }
+                    PaginationItem { PaginationLink { is_active: true, "1" } }
+                    PaginationItem { PaginationLink { "2" } }
+                    PaginationItem { PaginationEllipsis {} }
+                    PaginationItem { PaginationNext {} }
+                }
+            }
+        }
+    }
+}
+
+// ── ScrollArea ──
+
+#[component]
+fn ShowcaseScrollArea() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Scroll Area" }
+            p { class: "desc", "Custom scrollable container" }
+            div { style: "height: 120px; width: 200px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-secondary); overflow: hidden;",
+                ScrollArea {
+                    div { style: "padding: 12px;",
+                        for i in 1..=10 {
+                            div { style: "padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px;", "List Item {i}" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Aspect Ratio ──
+
+#[component]
+fn ShowcaseAspectRatio() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Aspect Ratio" }
+            p { class: "desc", "Locked 16:9 ratio container" }
+            div { style: "width: 100%; max-width: 240px; border: 1px dashed var(--border); border-radius: 6px; overflow: hidden;",
+                AspectRatio {
+                    ratio: 16.0 / 9.0,
+                    div { style: "width: 100%; height: 100%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center;",
+                        span { style: "color: var(--text-muted); font-size: 13px; font-weight: 600;", "16:9 Viewport" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Chart ──
+
+#[component]
+fn ShowcaseChart() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Charts" }
+            p { class: "desc", "Data visualization panels and sparklines." }
+            ChartPanel {
+                title: "CPU Utilization".to_string(),
+                description: "Last 60 seconds (Core 0-3)".to_string(),
+                icon: "📈".to_string(),
+                height: "140px".to_string(),
+                ChartMiniBar { values: vec![10.0, 45.3, 80.1, 32.4, 95.0, 12.0, 60.0] }
+            }
+        }
+    }
+}
+
+// ── Code Block ──
+
+#[component]
+fn ShowcaseCodeBlock() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Code Block" }
+            p { class: "desc", "VSCode-like snippet renderer." }
+            VscCodeBlock {
+                lang: "rust".to_string(),
+                code: "fn main() {\n    println!(\"Hello World\");\n}".to_string(),
+                show_line_numbers: true
+            }
+        }
+    }
+}
+
+// ── Document Viewer ──
+
+#[component]
+fn ShowcaseDocumentViewer() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Document Viewer" }
+            p { class: "desc", "Cards for documents & files." }
+            DocumentViewer {
+                title: "architecture.pdf".to_string(),
+                format: "pdf".to_string(),
+                icon: "📕".to_string(),
+                file_size: "2.4 MB".to_string(),
+                page_count: "42".to_string(),
+                div {}
+            }
+        }
+    }
+}
+
+// ── Flow Graph ──
+
+#[component]
+fn ShowcaseFlowGraph() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Flow Graph" }
+            p { class: "desc", "Node-based visual graphs and states." }
+            FlowGraph {
+                name: "Response Playbook".to_string(),
+                description: "Automated isolation sequence".to_string(),
+                icon: "🔄".to_string(),
+                div { style: "display: flex; gap: 16px; align-items: center; padding: 20px;",
+                    FlowNodeCard { label: "Triggered".to_string(), sub_label: "Alert 1337".to_string(), completed: true, active: false }
+                    FlowEdgeLine { completed: true, active: false }
+                    FlowNodeCard { label: "Isolating".to_string(), sub_label: "Network block".to_string(), completed: false, active: true }
+                }
+            }
+        }
+    }
+}
+
+// ── Markdown View ──
+
+#[component]
+fn ShowcaseMarkdown() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Markdown View" }
+            p { class: "desc", "Styled prose container." }
+            MarkdownView {
+                MdHeading { level: 3, "Report Context" }
+                MdBlockquote { "Observed lateral movement from 10.0.0.5." }
+            }
+        }
+    }
+}
+
+// ── REST Endpoint ──
+
+#[component]
+fn ShowcaseRestEndpoint() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "REST Endpoint" }
+            p { class: "desc", "API documentation cards." }
+            RestEndpointCard {
+                method: "POST".to_string(),
+                path: "/api/v1/isolate".to_string(),
+                summary: "Quarantines a host.".to_string(),
+                div {}
+            }
+        }
+    }
+}
+
+// ── Service Card ──
+
+#[component]
+fn ShowcaseServiceCards() -> Element {
+    rsx! {
+        div { class: "showcase-section",
+            h2 { "Service Card" }
+            p { class: "desc", "Telemetry and worker status." }
+            ServiceStatusCard {
+                name: "Elastic Agent".to_string(),
+                status: "running".to_string(),
+                uptime: "45d 12h".to_string(),
+                icon: "🛡️".to_string(),
+                div { style: "margin-top: 12px; display: flex; gap: 16px;",
+                    ServiceMetric { label: "Memory".to_string(), value: "142.5".to_string(), unit: "MB".to_string() }
                 }
             }
         }
