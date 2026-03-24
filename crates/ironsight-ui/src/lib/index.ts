@@ -1,4 +1,3 @@
-export { default as ProjectCard } from './components/ui/ProjectCard.svelte';
 export { default as ActivityBar } from './components/shell/ActivityBar.svelte';
 export { default as ActivityIcon } from './components/shell/ActivityIcon.svelte';
 export { default as AuxiliaryBar } from './components/shell/AuxiliaryBar.svelte';
@@ -87,7 +86,6 @@ export { default as Tree } from './components/data-display/Tree.svelte';
 export { default as TreeItem } from './components/data-display/TreeItem.svelte';
 
 // Display
-export { default as AnimatedContainer } from './components/display/AnimatedContainer.svelte';
 export { default as HighlightedLabel } from './components/display/HighlightedLabel.svelte';
 export { default as IconLabel } from './components/display/IconLabel.svelte';
 export { default as KeybindingLabel } from './components/display/KeybindingLabel.svelte';
