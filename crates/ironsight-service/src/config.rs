@@ -134,7 +134,6 @@ impl Default for ThresholdConfig {
     }
 }
 
-
 impl Default for ReportConfig {
     fn default() -> Self {
         Self {
