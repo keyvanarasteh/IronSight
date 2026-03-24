@@ -18,15 +18,7 @@
 	import {
 		Activity,
 		AlertTriangle,
-		Blocks,
-		Cpu,
-		Database,
-		FileSearch,
-		Globe,
-		Monitor,
-		Search,
-		Settings,
-		Shield
+		Settings
 	} from 'lucide-svelte';
 	import { untrack } from 'svelte';
 	import '../app.css';
@@ -39,15 +31,7 @@
 
 	// ── Activity Bar Items ───────────────────────────────
 	const topItems: ActivityItem[] = [
-		{ id: 'dashboard', icon: Activity, tooltip: 'Dashboard' },
-		{ id: 'devices', icon: Monitor, tooltip: 'Devices' },
-		{ id: 'processes', icon: Cpu, tooltip: 'Processes' },
-		{ id: 'network', icon: Globe, tooltip: 'Network' },
-		{ id: 'memory', icon: Database, tooltip: 'Memory Forensics' },
-		{ id: 'files', icon: FileSearch, tooltip: 'File Integrity' },
-		{ id: 'alerts', icon: AlertTriangle, tooltip: 'Alerts' },
-		{ id: 'response', icon: Shield, tooltip: 'Response' },
-		{ id: 'audit', icon: Blocks, tooltip: 'Audit Logs' }
+		{ id: 'dashboard', icon: Activity, tooltip: 'Dashboard' }
 	];
 
 	const bottomItems: ActivityItem[] = [
@@ -57,14 +41,6 @@
 	// ── Sidebar title map ────────────────────────────────
 	const sidebarTitles: Record<string, string> = {
 		dashboard: 'Dashboard',
-		devices: 'Devices',
-		processes: 'Processes',
-		network: 'Network',
-		memory: 'Memory',
-		files: 'Files',
-		alerts: 'Alerts',
-		response: 'Response',
-		audit: 'Audit Logs',
 		settings: 'Settings'
 	};
 
@@ -87,17 +63,9 @@
 	);
 
 	function getTabDetails(path: string, label: string) {
-		let icon = Shield;
+		let icon = Activity;
 		let lang = '';
-		if (path.startsWith('/devices')) icon = Monitor;
-		else if (path.startsWith('/processes')) icon = Cpu;
-		else if (path.startsWith('/network')) icon = Globe;
-		else if (path.startsWith('/memory')) icon = Database;
-		else if (path.startsWith('/files')) icon = FileSearch;
-		else if (path.startsWith('/alerts')) icon = AlertTriangle;
-		else if (path.startsWith('/response')) icon = Shield;
-		else if (path.startsWith('/audit')) icon = Blocks;
-		else if (path.startsWith('/settings')) icon = Settings;
+		if (path.startsWith('/settings')) icon = Settings;
 
 		return { icon, lang };
 	}
