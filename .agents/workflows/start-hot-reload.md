@@ -8,5 +8,5 @@ This workflow starts the Dioxus Desktop UI with experimental Rust hot-reloading 
 // turbo
 1. Start the development server using the Dioxus CLI (`dx`):
 ```bash
-dx serve --bin ironsight-ui --platform desktop
+dx serve --package ironsight-ui --platform desktop
 ```
