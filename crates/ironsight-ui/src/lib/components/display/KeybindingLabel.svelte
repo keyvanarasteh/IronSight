@@ -1,20 +1,53 @@
 <script lang="ts">
+	import { cn } from '../../utils';
+
 	let {
-		keybinding,
-		os = 'mac',
-		class: className = ''
+		keybinding = '',
+		os = 'linux',
+		class: className,
+		...rest
 	}: {
-		keybinding: string;
-		os?: 'mac' | 'windows' | 'linux';
+		keybinding?: string;
+		os?: 'win' | 'mac' | 'linux';
 		class?: string;
+		[key: string]: unknown;
 	} = $props();
 
-	// Very simple display logic for the keybinding
-	let displayKey = $derived(os === 'mac' && keybinding.includes('Cmd') 
-		? keybinding.replace('Cmd+', '⌘') 
-		: keybinding.replace('Cmd+', 'Ctrl+'));
+	// Parse "Ctrl+Shift+P" into segments
+	let keys = $derived(
+		keybinding.split('+').map((key) => {
+			if (os === 'mac') {
+				switch (key.toLowerCase()) {
+					case 'ctrl':
+						return '⌃';
+					case 'shift':
+						return '⇧';
+					case 'alt':
+						return '⌥';
+					case 'meta':
+					case 'cmd':
+						return '⌘';
+					default:
+						return key;
+				}
+			}
+			return key;
+		})
+	);
 </script>
 
-<div class="flex items-center justify-center rounded border border-border bg-muted/30 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground {className}">
-	{displayKey}
-</div>
+<span
+	class={cn('text-keybinding-fg inline-flex items-center gap-[2px] text-[11px]', className)}
+	{...rest}
+>
+	{#each keys as key, i (key)}
+		{#if i > 0}
+			<span class="text-foreground-muted text-[9px]">+</span>
+		{/if}
+		<kbd
+			class="border-border bg-background-elevated text-keybinding-fg inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[3px] border px-[4px] font-sans text-[11px] leading-none"
+		>
+			{key}
+		</kbd>
+	{/each}
+</span>
