@@ -30,16 +30,16 @@ IronSight is a professional SecOps & Reverse Engineering toolkit built as a Rust
 ### 🔴 Severity: Critical (3)
 
 1. **`ironsight-kernel` is completely unimplemented** — The eBPF/ETW kernel monitoring crate is a blank stub. This is the entire real-time kernel-level detection layer.
-2. **No graceful shutdown mechanism** — `ProcessSpy::start_monitoring()` spawns a thread with an infinite loop and no stop flag. The thread handle is stored but never joined or cancelled.
+2. **[FIXED] No graceful shutdown mechanism** — `ProcessSpy::start_monitoring()` spawns a thread with an infinite loop and no stop flag. The thread handle is stored but never joined or cancelled.
 3. **Memory dump writes to world-readable `/tmp/`** — Forensic memory dumps default to `/tmp/ironsight-reports` with no permission hardening, leaking sensitive process memory.
 
 ### 🟠 Severity: High (7)
 
-4. **No async runtime** — The service uses blocking I/O throughout despite depending on `tokio`. The main scan loop is synchronous.
-5. **`auto_response` config option is defined but never used** — The threshold config includes `auto_response: bool` but `main.rs` never checks it.
+4. **[FIXED] No async runtime** — The service uses blocking I/O throughout despite depending on `tokio`. The main scan loop is synchronous.
+5. **[FIXED] `auto_response` config option is defined but never used** — The threshold config includes `auto_response: bool` but `main.rs` never checks it.
 6. **Response handler `respond()` ignores `MemoryDump` and `Resume` action types** — The match arm `_ => {}` silently drops these.
-7. **No integration between `ironsight-response::ExclusionList` and `ironsight-service::config::ExclusionConfig`** — Two separate exclusion systems exist with no bridge.
-8. **`ProcessSnapshot` is not `Serialize`/`Deserialize`** — Uses `Instant` which cannot be serialized, preventing persistence.
+7. **[FIXED] No integration between `ironsight-response::ExclusionList` and `ironsight-service::config::ExclusionConfig`** — Two separate exclusion systems exist with no bridge.
+8. **[FIXED] `ProcessSnapshot` is not `Serialize`/`Deserialize`** — Uses `Instant` which cannot be serialized, preventing persistence.
 9. **Memory scanner allocates entire region into memory** — `scan_process()` reads up to 64 MiB per region into a `Vec`, risking OOM on large scans.
 10. **No SIEM export implementation** — Despite the crate description mentioning "Splunk HEC, Microsoft Sentinel export", only local JSON file saving is implemented.
 

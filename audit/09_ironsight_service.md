@@ -127,18 +127,18 @@ let _ = std::fs::create_dir_all(report_dir);
 
 | Feature | Status | Notes |
 |---|---|---|
-| Async/concurrent scanning | ❌ | Tokio unused |
-| Continuous daemon mode | ❌ | Single-shot only |
-| auto_response integration | ❌ | Config dead |
-| Decay engine integration | ❌ | Never used |
-| Memory pattern scanning | ❌ | Not called |
-| Signal handling (SIGTERM) | ❌ | No handler |
+| Async/concurrent scanning | ✅ | tokio::spawn & join_all |
+| Continuous daemon mode | ✅ | Configurable loop via CLI |
+| auto_response integration | ✅ | Response handler integrated |
+| Decay engine integration | ✅ | decay.record & get_score |
+| Memory pattern scanning | ✅ | scan_process() called |
+| Signal handling (SIGTERM) | ✅ | tokio::signal handler added |
 | systemd service unit | ❌ | No .service file |
-| JSON stdout output | ❌ | Text only |
+| JSON stdout output | ✅ | --json flag with serde |
 | REST API interface | ❌ | No server mode |
-| Network scan caching | ❌ | Per-process rescan |
+| Network scan caching | ✅ | NetworkAuditCache implementation |
 | Kernel crate integration | ❌ | Empty stub |
-| clap/structopt CLI parsing | ❌ | Manual arg parsing |
+| clap/structopt CLI parsing | ✅ | clap v4 Parser |
 | Log file output | ❌ | Stderr only |
 | Watchdog heartbeat | ❌ | PID check only |
 | Config hot-reload | ❌ | Read once |

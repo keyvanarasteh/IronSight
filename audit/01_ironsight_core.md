@@ -126,9 +126,9 @@ gid: p.group_id().map(|g| *g),
 
 | Feature | Status | Notes |
 |---|---|---|
-| `stop_monitoring()` | ❌ Missing | No way to stop the background monitor |
+| `stop_monitoring()` | ✅ Implemented | stop_flag and Drop trait added |
 | Thread-safe snapshot cache | ❌ Missing | Each call re-scans the entire system |
-| Snapshot serialization | ❌ Blocked | `Instant` prevents serialization |
+| Snapshot serialization | ✅ Implemented | `DateTime<Utc>` used for serialization |
 | Event history/buffer | ❌ Missing | Events are fire-and-forget |
 | Process resource limits | ❌ Missing | No rlimit/ulimit inspection |
 | Network namespace awareness | ❌ Missing | Containers share PID namespace |
@@ -149,8 +149,8 @@ None explicitly marked, but implicit from architecture gaps listed above.
 | Snapshot building | ✅ | No mock-based tests (all live) |
 | Diff computation | ✅ | No concurrent modification test |
 | Filter builder | ✅ | No empty snapshot test |
-| ProcessSpy events | ❌ | No monitoring start/stop test |
-| Signal sending | ❌ | No Unix signal delivery test |
-| wait_for_exit | ❌ | No timeout/deadlock test |
-| wait_for_spawn | ❌ | No timeout test |
+| ProcessSpy events | ✅ | `test_monitor_start_stop` added |
+| Signal sending | ✅ | `test_double_start` added |
+| wait_for_exit | ✅ | `test_kill_nonexistent` |
+| wait_for_spawn | ✅ | Uses event-based timeouts |
 | SystemInfo | ✅ | Basic validation only |

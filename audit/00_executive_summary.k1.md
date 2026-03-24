@@ -21,7 +21,7 @@ Projedeki 9 crate'in durumu bir tabla:
 ## Kritik Bulgular — 3 Tanesi Acil
 
 1. **Kernel crate boş** — Gerçek zamanlı kernel seviyesi algılama yok. Proje şu an sadece periyodik polling yapıyor.
-2. **Graceful shutdown yok** — `ProcessSpy` bir thread başlatıyor ama durduramıyor. Sonsuz döngü, stop mekanizması yok.
+2. **✅ [ÇÖZÜLDÜ] Graceful shutdown yok** — `ProcessSpy` bir thread başlatıyor ama durduramıyor. Sonsuz döngü, stop mekanizması yok.
 3. **Memory dump güvensiz** — Forensik dump'lar `/tmp/` altına yazılıyor, herkes okuyabilir. Hassas process verileri (şifreler, anahtarlar) açıkta.
 
 ## Eksik Özellikler Tablosu

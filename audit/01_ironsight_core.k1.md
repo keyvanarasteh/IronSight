@@ -19,7 +19,7 @@ Düşün ki bir güvenlik kamerası sistemi: her 5 saniyede bir fotoğraf çek, 
 
 ## Kritik Sorunlar
 
-### Graceful Shutdown Yok
+### ✅ [ÇÖZÜLDÜ] Graceful Shutdown Yok
 `ProcessSpy::start_monitoring()` bir thread başlatıyor — `loop { ... }` ile sonsuz döngü. Ama bu thread'i **durduracak mekanizma yok.** Ne `AtomicBool` ile stop flag var, ne `Drop` implementasyonu. Thread sonsuza kadar çalışıyor.
 
 Bu niye kötü? Çünkü:
@@ -27,10 +27,10 @@ Bu niye kötü? Çünkü:
 - Programı kapatırken thread temiz kapanmaz
 - Kaynak sızıntısı (resource leak) oluşur
 
-### Snapshot Serialize Edilemiyor
+### ✅ [ÇÖZÜLDÜ] Snapshot Serialize Edilemiyor
 `ProcessSnapshot` içinde `std::time::Instant` kullanıyor — bu tip `Serialize`/`Deserialize` yapamaz. Yani snapshot'ı diske yazamaz, ağ üzerinden gönderemez, JSON'a çeviremezsin. `DateTime<Utc>` ile değiştirilmeli.
 
-### wait_for_spawn Sürekli Tam Tarama Yapıyor
+### ✅ [ÇÖZÜLDÜ] wait_for_spawn Sürekli Tam Tarama Yapıyor
 Belirli bir process'in başlamasını beklerken her 200ms'de **tüm sistemi baştan tarıyor.** CPU'yu yakıyor. Doğrusu: event kanalını (subscribe) dinlemek.
 
 ## Yüksek Sorunlar
