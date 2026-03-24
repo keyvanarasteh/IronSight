@@ -283,7 +283,11 @@ fn timestamp_now() -> String {
 pub fn verify_process_exists(pid: u32) -> bool {
     use nix::sys::signal::kill;
     use nix::unistd::Pid;
-    kill(Pid::from_raw(pid as i32), None).is_ok()
+    match kill(Pid::from_raw(pid as i32), None) {
+        Ok(_) => true,
+        Err(nix::errno::Errno::ESRCH) => false,
+        Err(_) => true, // Other errors like EPERM indicate the process exists but is inaccessible
+    }
 }
 
 #[cfg(not(unix))]

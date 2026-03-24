@@ -18,18 +18,17 @@ mod privilege;
 mod watchdog;
 
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use clap::Parser;
 use sysinfo::{ProcessRefreshKind, System, UpdateKind};
 use tokio::signal;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
-
-use ironsight_core::snapshot::{build_snapshot, ProcessSnapshot};
 use ironsight_core::ProcessInfo;
+use ironsight_core::snapshot::{ProcessSnapshot, build_snapshot};
 use ironsight_heuristic::signals;
 use ironsight_heuristic::{DecayEngine, HeuristicEngine, Signal, ThreatLevel};
 use ironsight_report::incident;
@@ -67,16 +66,6 @@ struct Cli {
 
     #[arg(long)]
     generate_config: bool,
-}
-
-struct NetworkAuditCache;
-impl NetworkAuditCache {
-    fn scan_all() -> Result<Self> {
-        Ok(Self)
-    }
-    fn get_for_pid(&self, pid: u32) -> ironsight_network::audit::NetworkAudit {
-        ironsight_network::audit::NetworkAudit::scan_pid(pid)
-    }
 }
 
 pub struct ScanResult {
@@ -119,12 +108,11 @@ async fn main() -> Result<()> {
     });
 
     // ── Initialize logging from config ──
-    let env_filter = tracing_subscriber::EnvFilter::from_default_env()
-        .add_directive(
-            format!("ironsight={}", cfg.general.log_level)
-                .parse()
-                .unwrap_or_else(|_| "ironsight=info".parse().unwrap()),
-        );
+    let env_filter = tracing_subscriber::EnvFilter::from_default_env().add_directive(
+        format!("ironsight={}", cfg.general.log_level)
+            .parse()
+            .unwrap_or_else(|_| "ironsight=info".parse().unwrap()),
+    );
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     // ── Banner ──
@@ -154,10 +142,7 @@ async fn main() -> Result<()> {
     // ── Watchdog spawn ──
     if cfg.watchdog.enabled && !cli.daemon {
         let my_pid = std::process::id();
-        match watchdog::spawn_sentinel(
-            my_pid,
-            Duration::from_secs(cfg.watchdog.interval_secs),
-        ) {
+        match watchdog::spawn_sentinel(my_pid, Duration::from_secs(cfg.watchdog.interval_secs)) {
             Ok(sentinel_pid) => {
                 info!("🐕 Watchdog sentinel spawned as PID {sentinel_pid}");
             }
@@ -181,11 +166,14 @@ async fn main() -> Result<()> {
 async fn run_daemon(config: Arc<config::Config>) -> Result<()> {
     let interval = Duration::from_secs(config.general.interval_secs);
     let mut decay = DecayEngine::new();
-    
-    info!("Daemon mode started — interval: {}s", config.general.interval_secs);
-    
+
+    info!(
+        "Daemon mode started — interval: {}s",
+        config.general.interval_secs
+    );
+
     let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
-    
+
     tokio::spawn(async move {
         let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
         tokio::select! {
@@ -195,15 +183,17 @@ async fn run_daemon(config: Arc<config::Config>) -> Result<()> {
         info!("Shutdown signal received");
         let _ = shutdown_tx.send(true);
     });
-    
+
     loop {
         let scan_start = Instant::now();
         let results = run_scan(Arc::clone(&config), &mut decay, None).await?;
         let scan_duration = scan_start.elapsed();
-        
-        info!("Scan completed in {:?} — {} threats found", 
-              scan_duration, results.threat_count);
-        
+
+        info!(
+            "Scan completed in {:?} — {} threats found",
+            scan_duration, results.threat_count
+        );
+
         tokio::select! {
             _ = tokio::time::sleep(interval) => {},
             _ = shutdown_rx.changed() => {
@@ -236,7 +226,7 @@ async fn run_scan(
             .with_user(UpdateKind::OnlyIfNotSet),
     );
     let snapshot = build_snapshot(&sys);
-    
+
     let processes: Vec<ProcessInfo> = if let Some(pid) = target_pid {
         match snapshot.find_by_pid(pid) {
             Some(p) => vec![p.clone()],
@@ -249,12 +239,8 @@ async fn run_scan(
     };
 
     let engine = Arc::new(HeuristicEngine::new());
-    let net_cache = Arc::new(NetworkAuditCache::scan_all()?);
-    let mut ex_list = ExclusionList::default();
-    for n in &cfg.exclusions.names { ex_list.add_name(n); }
-    for p in &cfg.exclusions.paths { ex_list.path_prefixes.push(p.to_string()); }
-    for pid in &cfg.exclusions.pids { ex_list.add_pid(*pid); }
-    let exclusion_list = Arc::new(ex_list);
+    let net_cache = Arc::new(ironsight_network::audit::NetworkAuditCache::scan_all());
+    let exclusion_list = Arc::new(ExclusionList::from(&cfg.exclusions));
 
     let handles = processes.into_iter().map(|proc| {
         let engine = Arc::clone(&engine);
@@ -276,13 +262,16 @@ async fn run_scan(
     // ── Decay engine Integration & Auto Response ──
     let mut active_results = Vec::new();
     let mut threat_count = 0;
-    
+
     for mut result in scanned {
         let raw_score = result.assessment.score;
         decay.record(result.assessment.pid, raw_score);
-        let effective_score = decay.get_score(result.assessment.pid).map(|d| d.decayed_score).unwrap_or(raw_score);
+        let effective_score = decay
+            .get_score(result.assessment.pid)
+            .map(|d| d.decayed_score)
+            .unwrap_or(raw_score);
         result.assessment.score = effective_score;
-        
+
         if result.assessment.level >= ThreatLevel::Medium {
             threat_count += 1;
         }
@@ -290,25 +279,29 @@ async fn run_scan(
         if cfg.thresholds.auto_response && effective_score >= 80.0 {
             let handler = ResponseHandler::new(&cfg.general.report_dir)
                 .with_exclusions(exclusion_list.as_ref().clone());
-            
+
             let exe_path = result.report.process.exe_path.clone();
             let log = handler.respond(
-                result.assessment.pid, 
-                &result.assessment.name, 
+                result.assessment.pid,
+                &result.assessment.name,
                 exe_path.as_deref(),
                 result.assessment.score,
-                ActionType::SuspendDumpKill
+                ActionType::SuspendDumpKill,
             );
             info!("Auto-response executed: {:?}", log);
-            let mapped_actions: Vec<incident::ActionInfo> = log.actions_taken.into_iter().map(|a| incident::ActionInfo {
-                action_type: format!("{:?}", a.action),
-                success: a.success,
-                message: a.message,
-                timestamp: a.timestamp,
-            }).collect();
+            let mapped_actions: Vec<incident::ActionInfo> = log
+                .actions_taken
+                .into_iter()
+                .map(|a| incident::ActionInfo {
+                    action_type: format!("{:?}", a.action),
+                    success: a.success,
+                    message: a.message,
+                    timestamp: a.timestamp,
+                })
+                .collect();
             result.report.actions.extend(mapped_actions);
         }
-        
+
         active_results.push(result);
     }
 
@@ -323,10 +316,14 @@ async fn scan_process(
     cfg: &config::Config,
     engine: &HeuristicEngine,
     exclusion_list: &ExclusionList,
-    net_cache: &NetworkAuditCache,
+    net_cache: &ironsight_network::audit::NetworkAuditCache,
 ) -> Option<ScanResult> {
     let exe_str = proc_info.exe.as_ref().map(|p| p.to_string_lossy());
-    if exclusion_list.is_excluded(&proc_info.name, proc_info.pid, exe_str.as_deref().map(|s| s.as_ref())) {
+    if exclusion_list.is_excluded(
+        &proc_info.name,
+        proc_info.pid,
+        exe_str.as_deref().map(|s| s.as_ref()),
+    ) {
         return None;
     }
 
@@ -391,7 +388,16 @@ async fn scan_process(
 
     // ── Network Analysis ──
     if cfg.scan.network {
-        let net_audit = net_cache.get_for_pid(proc_info.pid);
+        // Instantiate a fast resolver per process
+        let mut resolver = ironsight_network::dns::AsyncDnsResolver::new()
+            .await
+            .unwrap_or_else(|_| panic!("Failed to build async dns resolver"));
+        let net_audit = ironsight_network::audit::NetworkAudit::scan_async_pid(
+            proc_info.pid,
+            net_cache,
+            &mut resolver,
+        )
+        .await;
         report.network = incident::NetworkInfo {
             total_sockets: net_audit.total_sockets,
             listeners: net_audit.listeners.len(),
@@ -429,16 +435,14 @@ async fn scan_process(
                 flags: summary.flags.clone(),
             };
             if summary.writable_executable_regions > 0 {
-                sigs.push(signals::wx_violation(
-                    summary.writable_executable_regions,
-                ));
+                sigs.push(signals::wx_violation(summary.writable_executable_regions));
             }
             if summary.anonymous_executable_regions > 0 {
                 sigs.push(signals::anonymous_executable(
                     summary.anonymous_executable_regions,
                 ));
             }
-            
+
             let pattern_result = ironsight_memory::scanner::scan_process(proc_info.pid);
             for m in &pattern_result.matches {
                 sigs.push(Signal::new(
@@ -454,7 +458,13 @@ async fn scan_process(
     let assessment = engine.assess(proc_info.pid, &proc_info.name, sigs);
     report.threat = incident::ThreatInfo {
         score: assessment.score,
-        level: format!("{:?}", assessment.level),
+        level: match assessment.level {
+            ThreatLevel::Clean => incident::ThreatLevel::Clean,
+            ThreatLevel::Low => incident::ThreatLevel::Low,
+            ThreatLevel::Medium => incident::ThreatLevel::Medium,
+            ThreatLevel::High => incident::ThreatLevel::High,
+            ThreatLevel::Critical => incident::ThreatLevel::Critical,
+        },
         signals: assessment
             .signals
             .iter()
@@ -466,16 +476,28 @@ async fn scan_process(
                 evidence: s.evidence.clone(),
             })
             .collect(),
-        recommended_action: format!("{:?}", assessment.recommended_action),
+        recommended_action: Box::new(match assessment.recommended_action {
+            ironsight_heuristic::RecommendedAction::None => incident::RecommendedAction::None,
+            ironsight_heuristic::RecommendedAction::Monitor => incident::RecommendedAction::Log,
+            ironsight_heuristic::RecommendedAction::Alert => incident::RecommendedAction::Monitor,
+            ironsight_heuristic::RecommendedAction::Suspend => incident::RecommendedAction::Suspend,
+            ironsight_heuristic::RecommendedAction::SuspendDumpKill => incident::RecommendedAction::SuspendDumpKill,
+        }),
     };
 
     Some(ScanResult { assessment, report })
 }
 
-fn display_results(run_res: ScanRunResult, top_n: usize, json_mode: bool, cfg: &config::Config) -> Result<()> {
+fn display_results(
+    run_res: ScanRunResult,
+    top_n: usize,
+    json_mode: bool,
+    cfg: &config::Config,
+) -> Result<()> {
     let mut assessments = run_res.results;
     assessments.sort_by(|a, b| {
-        b.assessment.score
+        b.assessment
+            .score
             .partial_cmp(&a.assessment.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
@@ -508,12 +530,22 @@ fn display_results(run_res: ScanRunResult, top_n: usize, json_mode: bool, cfg: &
     println!();
 
     println!("── Top {top_n} Threats ─────────────────────────────────────────────");
-    println!("  {:<8} {:<20} {:>6} {:<10} {}", "PID", "NAME", "SCORE", "LEVEL", "SIGNALS");
+    println!(
+        "  {:<8} {:<20} {:>6} {:<10} {}",
+        "PID", "NAME", "SCORE", "LEVEL", "SIGNALS"
+    );
     println!("  {}", "─".repeat(70));
 
     for res in assessments.iter().take(top_n) {
-        if res.assessment.score < 1.0 { continue; }
-        let signal_names: Vec<&str> = res.assessment.signals.iter().map(|s| s.name.as_str()).collect();
+        if res.assessment.score < 1.0 {
+            continue;
+        }
+        let signal_names: Vec<&str> = res
+            .assessment
+            .signals
+            .iter()
+            .map(|s| s.name.as_str())
+            .collect();
         println!(
             "  {:<8} {:<20} {:>5.0} {} {:<10} {}",
             res.assessment.pid,

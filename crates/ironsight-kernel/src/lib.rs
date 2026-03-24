@@ -8,5 +8,11 @@
 pub mod events;
 pub mod dispatcher;
 
+#[cfg(target_os = "linux")]
+pub mod linux;
+
+#[cfg(target_os = "windows")]
+pub mod windows;
+
 pub use events::{KernelEvent, KernelEventKind, MemoryProtection, SyscallInfo};
 pub use dispatcher::{EventDispatcher, EventSubscription};

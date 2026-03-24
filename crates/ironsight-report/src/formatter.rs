@@ -44,22 +44,21 @@ pub fn to_text(report: &IncidentReport) -> String {
     out.push_str("\n");
 
     // Threat
-    let level_emoji = match report.threat.level.as_str() {
-        "Clean" => "✅",
-        "Low" => "🟡",
-        "Medium" => "🟠",
-        "High" => "🔴",
-        "Critical" => "🚨",
-        _ => "❓",
+    let level_emoji = match report.threat.level {
+        crate::incident::ThreatLevel::Clean => "✅",
+        crate::incident::ThreatLevel::Low => "🟡",
+        crate::incident::ThreatLevel::Medium => "🟠",
+        crate::incident::ThreatLevel::High => "🔴",
+        crate::incident::ThreatLevel::Critical => "🚨",
     };
     out.push_str("── Threat Assessment ───────────────────────────────────────────\n");
     out.push_str(&format!(
-        "  Score:      {:.0}/100 {} {}\n",
+        "  Score:      {:.0}/100 {} {:?}\n",
         report.threat.score, level_emoji, report.threat.level
     ));
     out.push_str(&format!(
-        "  Action:     {}\n",
-        report.threat.recommended_action
+        "  Action:     {:?}\n",
+        *report.threat.recommended_action
     ));
 
     if !report.threat.signals.is_empty() {
@@ -164,6 +163,30 @@ pub fn save_json(report: &IncidentReport, path: &str) -> Result<(), Box<dyn std:
     Ok(())
 }
 
+/// Format a report in Syslog CEF (Common Event Format) for enterprise SIEM ingestion
+pub fn to_cef(report: &IncidentReport) -> String {
+    let severity = match report.threat.level {
+        crate::incident::ThreatLevel::Clean => 1,
+        crate::incident::ThreatLevel::Low => 3,
+        crate::incident::ThreatLevel::Medium => 5,
+        crate::incident::ThreatLevel::High => 8,
+        crate::incident::ThreatLevel::Critical => 10,
+    };
+    
+    let process_name = &report.process.name;
+    let msg = format!("Threat detected in {}", process_name);
+    
+    format!(
+        "CEF:0|IronSight|EDR|1.0|001|Malicious Process Detected|{}|msg={} sproc={} suid={} cs1Label=Action cs1={:?} cn1Label=Score cn1={}",
+        severity,
+        msg,
+        process_name,
+        report.process.user.as_deref().unwrap_or("unknown"),
+        *report.threat.recommended_action,
+        report.threat.score
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,7 +207,7 @@ mod tests {
         };
         report.threat = ThreatInfo {
             score: 85.0,
-            level: "Critical".into(),
+            level: crate::incident::ThreatLevel::Critical,
             signals: vec![
                 SignalInfo {
                     name: "HIGH_ENTROPY".into(),
@@ -201,7 +224,7 @@ mod tests {
                     evidence: Some("4444".into()),
                 },
             ],
-            recommended_action: "SuspendDumpKill".into(),
+            recommended_action: Box::new(crate::incident::RecommendedAction::SuspendDumpKill),
         };
         report.security = SecurityInfo {
             sha256: Some("abcdef1234567890".into()),

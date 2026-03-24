@@ -17,6 +17,46 @@ pub struct ExclusionList {
     pub name_patterns: Vec<regex::Regex>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExclusionConfig {
+    pub names: Vec<String>,
+    pub pids: Vec<u32>,
+    pub paths: Vec<String>,
+    pub patterns: Vec<String>,
+}
+
+impl Default for ExclusionConfig {
+    fn default() -> Self {
+        Self {
+            names: vec![
+                "systemd".into(),
+                "init".into(),
+                "sshd".into(),
+                "dbus-daemon".into(),
+            ],
+            paths: vec!["/usr/lib/systemd/".into(), "/usr/sbin/".into()],
+            pids: vec![1],
+            patterns: vec![],
+        }
+    }
+}
+
+
+
+impl From<&ExclusionConfig> for ExclusionList {
+    fn from(config: &ExclusionConfig) -> Self {
+        let mut list = ExclusionList::new();
+        for name in &config.names { list.add_name(name); }
+        for pid in &config.pids { list.add_pid(*pid); }
+        for path in &config.paths { list.path_prefixes.push(path.to_string()); }
+        for pattern in &config.patterns {
+            let _ = list.add_pattern(pattern);
+        }
+        list
+    }
+}
+
 impl ExclusionList {
     pub fn new() -> Self {
         Self::default()

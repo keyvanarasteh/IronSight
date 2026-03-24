@@ -8,6 +8,51 @@ use serde::{Deserialize, Serialize};
 
 use crate::actions::{self, ActionResult, ActionType};
 use crate::exclusions::ExclusionList;
+use std::collections::VecDeque;
+use std::time::Instant;
+use parking_lot::Mutex;
+
+/// Rate limiter for response actions.
+pub struct ActionRateLimiter {
+    actions: VecDeque<(Instant, ActionType)>,
+    max_kills_per_minute: usize,
+    max_suspends_per_minute: usize,
+}
+
+impl ActionRateLimiter {
+    pub fn new(max_kills: usize, max_suspends: usize) -> Self {
+        Self {
+            actions: VecDeque::new(),
+            max_kills_per_minute: max_kills,
+            max_suspends_per_minute: max_suspends,
+        }
+    }
+
+    pub fn can_act(&mut self, action: &ActionType) -> bool {
+        self.cleanup_old();
+        let count = self.actions.iter().filter(|(_, a)| *a == *action).count();
+        match action {
+            ActionType::Kill | ActionType::SuspendDumpKill => count < self.max_kills_per_minute,
+            ActionType::Suspend => count < self.max_suspends_per_minute,
+            _ => true,
+        }
+    }
+
+    pub fn record_action(&mut self, action: ActionType) {
+        self.actions.push_back((Instant::now(), action));
+    }
+
+    fn cleanup_old(&mut self) {
+        let now = Instant::now();
+        while let Some(&(time, _)) = self.actions.front() {
+            if now.duration_since(time).as_secs() > 60 {
+                self.actions.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+}
 
 /// A complete response log for an incident.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +70,10 @@ pub struct ResponseHandler {
     dump_dir: String,
     /// When true, log actions but don't actually send signals (STEP 5).
     pub dry_run: bool,
+    /// Path to the JSON action audit file
+    audit_log_path: Option<String>,
+    /// Rate limiter to prevent action floods
+    rate_limiter: Mutex<ActionRateLimiter>,
 }
 
 impl ResponseHandler {
@@ -33,7 +82,14 @@ impl ResponseHandler {
             exclusions: ExclusionList::default(),
             dump_dir: dump_dir.to_string(),
             dry_run: false,
+            audit_log_path: None,
+            rate_limiter: Mutex::new(ActionRateLimiter::new(5, 10)),
         }
+    }
+
+    pub fn with_audit_log(mut self, path: &str) -> Self {
+        self.audit_log_path = Some(path.to_string());
+        self
     }
 
     pub fn with_exclusions(mut self, exclusions: ExclusionList) -> Self {
@@ -81,6 +137,11 @@ impl ResponseHandler {
                 tracing::info!(pid, process_name, threat_score, "Threat logged (no action)");
             }
             ActionType::Suspend => {
+                if !self.rate_limiter.lock().can_act(&ActionType::Suspend) {
+                    tracing::warn!(pid, process_name, "Suspend action rate limited");
+                    return log;
+                }
+                self.rate_limiter.lock().record_action(ActionType::Suspend);
                 let result = actions::suspend(pid);
                 tracing::warn!(pid, process_name, "Process suspended");
                 log.actions_taken.push(result);
@@ -96,13 +157,36 @@ impl ResponseHandler {
                 log.actions_taken.push(dump_result);
             }
             ActionType::Kill => {
+                if !self.rate_limiter.lock().can_act(&ActionType::Kill) {
+                    tracing::warn!(pid, process_name, "Kill action rate limited");
+                    return log;
+                }
+                self.rate_limiter.lock().record_action(ActionType::Kill);
                 let kill_result = actions::kill_process(pid);
                 tracing::error!(pid, process_name, threat_score, "Process killed");
                 log.actions_taken.push(kill_result);
             }
             ActionType::SuspendDumpKill => {
+                if !self.rate_limiter.lock().can_act(&ActionType::SuspendDumpKill) {
+                    tracing::warn!(pid, process_name, "Forensic kill action rate limited");
+                    return log;
+                }
+                self.rate_limiter.lock().record_action(ActionType::SuspendDumpKill);
                 let extra_log = self.forensic_kill(pid, process_name);
                 log.actions_taken.extend(extra_log.actions_taken);
+            }
+        }
+
+        if let Some(path) = &self.audit_log_path {
+            if let Ok(json) = serde_json::to_string(&log) {
+                use std::io::Write;
+                if let Ok(mut file) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path)
+                {
+                    let _ = writeln!(file, "{}", json);
+                }
             }
         }
 

@@ -4,6 +4,8 @@
 
 pub mod formatter;
 pub mod incident;
+pub mod siem;
+pub mod summary;
 
 pub use formatter::{save_json, to_json, to_json_compact, to_text};
 pub use incident::IncidentReport;

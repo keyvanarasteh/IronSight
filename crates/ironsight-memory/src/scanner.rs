@@ -35,13 +35,28 @@ pub struct ScanResult {
     pub total_bytes_scanned: u64,
 }
 
+/// A structural hash identifying the contents of a memory region (STEP 3).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegionHash {
+    pub region_start: u64,
+    pub hash: u64,
+}
+
+/// Helper function to create a fast xxh3 hash of memory data
+pub fn hash_region(data: &[u8]) -> u64 {
+    xxhash_rust::xxh3::xxh3_64(data)
+}
+
 /// Built-in suspicious patterns to scan for.
-pub struct SuspiciousPatterns;
+#[derive(Debug, Clone, Default)]
+pub struct SuspiciousPatterns {
+    patterns: Vec<(String, String)>,
+}
 
 impl SuspiciousPatterns {
-    /// Common strings found in malware / reverse shells.
-    pub fn patterns() -> Vec<(&'static str, &'static str)> {
-        vec![
+    /// Create built-in default strings found in malware / reverse shells.
+    pub fn new() -> Self {
+        let default_patterns = vec![
             (r"/bin/sh", "Shell invocation — possible command execution"),
             (r"/bin/bash", "Bash invocation — possible command execution"),
             (r"cmd\.exe", "Windows cmd — possible command execution"),
@@ -56,7 +71,25 @@ impl SuspiciousPatterns {
             (r"BEGIN\s+RSA\s+PRIVATE\s+KEY", "RSA private key in memory"),
             (r"password[=:]\s*\S+", "Plaintext password in memory"),
             (r"api[_-]?key[=:]\s*\S+", "API key in memory"),
-        ]
+        ];
+        
+        Self {
+            patterns: default_patterns.into_iter().map(|(p, d)| (p.to_string(), d.to_string())).collect(),
+        }
+    }
+
+    /// Add a custom pattern to the scanner configuration (STEP 7).
+    pub fn add_pattern(&mut self, pattern: &str, description: &str) {
+        self.patterns.push((pattern.to_string(), description.to_string()));
+    }
+
+    /// Remove a pattern by its regex string.
+    pub fn remove_pattern(&mut self, pattern: &str) {
+        self.patterns.retain(|(p, _)| p != pattern);
+    }
+
+    pub fn patterns(&self) -> &[(String, String)] {
+        &self.patterns
     }
 }
 
@@ -80,10 +113,10 @@ pub fn entropy(data: &[u8]) -> f64 {
 }
 
 /// Scan a byte buffer for suspicious patterns.
-pub fn scan_buffer(data: &[u8], base_address: u64) -> Vec<PatternMatch> {
+pub fn scan_buffer(data: &[u8], base_address: u64, patterns: &SuspiciousPatterns) -> Vec<PatternMatch> {
     let mut matches = Vec::new();
 
-    for (pattern_str, _description) in SuspiciousPatterns::patterns() {
+    for (pattern_str, _description) in patterns.patterns() {
         let re = match Regex::new(pattern_str) {
             Ok(r) => r,
             Err(_) => continue,
@@ -144,6 +177,8 @@ pub fn scan_process(pid: u32) -> ScanResult {
             return result;
         }
     };
+    
+    let default_patterns = SuspiciousPatterns::new();
 
     for region in &regions {
         // Only scan readable regions, skip very large ones
@@ -177,7 +212,8 @@ pub fn scan_process(pid: u32) -> ScanResult {
             match file.read_exact(buf) {
                 Ok(_) => {
                     let base = region.start + offset as u64;
-                    let matches = scan_buffer(buf, base);
+                    let matches = scan_buffer(buf, base, &default_patterns);
+                    // (Optional) hash = hash_region(buf);
                     result.matches.extend(matches);
                     result.total_bytes_scanned += to_read as u64;
                 }
@@ -226,23 +262,26 @@ mod tests {
 
     #[test]
     fn scan_detects_shell_invocation() {
+        let patterns = SuspiciousPatterns::new();
         let data = b"normal data here /bin/sh -c whoami more data";
-        let matches = scan_buffer(data, 0x1000);
+        let matches = scan_buffer(data, 0x1000, &patterns);
         assert!(!matches.is_empty(), "Should detect /bin/sh");
         assert!(matches[0].matched_text.as_deref() == Some("/bin/sh"));
     }
 
     #[test]
     fn scan_detects_password() {
+        let patterns = SuspiciousPatterns::new();
         let data = b"config password=s3cretP4ss! end";
-        let matches = scan_buffer(data, 0x2000);
+        let matches = scan_buffer(data, 0x2000, &patterns);
         assert!(!matches.is_empty(), "Should detect plaintext password");
     }
 
     #[test]
     fn scan_clean_buffer() {
+        let patterns = SuspiciousPatterns::new();
         let data = b"This is perfectly normal application data with nothing suspicious.";
-        let matches = scan_buffer(data, 0x3000);
+        let matches = scan_buffer(data, 0x3000, &patterns);
         assert!(matches.is_empty(), "Clean data should have no matches");
     }
 
@@ -256,8 +295,8 @@ mod tests {
 
     #[test]
     fn suspicious_patterns_nonempty() {
-        let patterns = SuspiciousPatterns::patterns();
-        assert!(patterns.len() > 10, "Should have multiple suspicious patterns");
+        let patterns = SuspiciousPatterns::new();
+        assert!(patterns.patterns().len() > 10, "Should have multiple suspicious patterns");
     }
 
     // ── STEP 4: Entropy tests ────────────────────────────────────────────

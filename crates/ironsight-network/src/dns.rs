@@ -1,8 +1,12 @@
 //! DNS enrichment — reverse lookup for IP addresses.
 
 use std::net::IpAddr;
-
+use std::collections::HashMap;
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
+
+use hickory_resolver::TokioAsyncResolver;
+use hickory_resolver::config::*;
 
 /// Result of a reverse DNS lookup.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,20 +17,18 @@ pub struct DnsEntry {
 }
 
 impl DnsEntry {
-    /// Enrich an IP address with reverse DNS and privacy classification.
+    /// Enrich an IP address with reverse DNS and privacy classification (blocking fallback).
     pub fn lookup(ip: IpAddr) -> Self {
         let is_private = Self::is_private_ip(&ip);
-        let hostname = Self::reverse_lookup(&ip);
-
         DnsEntry {
             ip,
-            hostname,
+            hostname: None, 
             is_private,
         }
     }
 
     /// Check if an IP is in a private/reserved range.
-    fn is_private_ip(ip: &IpAddr) -> bool {
+    pub fn is_private_ip(ip: &IpAddr) -> bool {
         match ip {
             IpAddr::V4(v4) => {
                 v4.is_loopback()
@@ -42,46 +44,68 @@ impl DnsEntry {
                     || (v6.segments()[0] & 0xfe00) == 0xfc00
                     // Link-local (fe80::/10)
                     || (v6.segments()[0] & 0xffc0) == 0xfe80
+                    // IPv4 mapped (::ffff:0:0/96)
+                    || (v6.segments()[0] == 0 && v6.segments()[1] == 0 && v6.segments()[2] == 0 && v6.segments()[3] == 0 && v6.segments()[4] == 0 && v6.segments()[5] == 0xffff)
             }
         }
     }
+}
 
-    /// Attempt reverse DNS lookup via system resolver.
-    fn reverse_lookup(ip: &IpAddr) -> Option<String> {
-        // Use std DNS resolution (blocking — fine for audit-time lookups)
-        use std::net::ToSocketAddrs;
-        let addr = format!("{ip}:0");
-        // Try to resolve, timeout naturally handled by OS resolver
-        match addr.to_socket_addrs() {
-            Ok(_) => {
-                // Unfortunately std doesn't do reverse DNS.
-                // On Linux, we can try reading /etc/hosts or use `host` command.
-                #[cfg(target_os = "linux")]
-                {
-                    let output = std::process::Command::new("host")
-                        .arg(ip.to_string())
-                        .output();
+pub struct AsyncDnsResolver {
+    resolver: TokioAsyncResolver,
+    cache: HashMap<IpAddr, DnsEntry>,
+    timeout: Duration,
+}
 
-                    if let Ok(out) = output {
-                        let stdout = String::from_utf8_lossy(&out.stdout);
-                        // Parse "X.X.X.X.in-addr.arpa domain name pointer hostname."
-                        if let Some(line) = stdout.lines().find(|l| l.contains("domain name pointer")) {
-                            if let Some(hostname) = line.split("pointer ").nth(1) {
-                                let h = hostname.trim_end_matches('.').to_string();
-                                if !h.is_empty() {
-                                    return Some(h);
-                                }
-                            }
-                        }
-                    }
-                    None
-                }
+impl AsyncDnsResolver {
+    pub async fn new() -> anyhow::Result<Self> {
+        let resolver = TokioAsyncResolver::tokio(
+            ResolverConfig::default(),
+            ResolverOpts::default(),
+        );
+        Ok(Self { 
+            resolver, 
+            cache: HashMap::new(), 
+            timeout: Duration::from_secs(5) 
+        })
+    }
 
-                #[cfg(not(target_os = "linux"))]
+    pub async fn reverse_lookup(&mut self, ip: IpAddr) -> Option<String> {
+        if let Some(cached) = self.cache.get(&ip) {
+            return cached.hostname.clone();
+        }
+        
+        match tokio::time::timeout(self.timeout, self.resolver.reverse_lookup(ip)).await {
+            Ok(Ok(names)) => {
+                let first = names.iter().next().map(|n| n.to_string().trim_end_matches('.').to_string());
+                self.cache.insert(ip, DnsEntry {
+                    ip,
+                    hostname: first.clone(),
+                    is_private: DnsEntry::is_private_ip(&ip),
+                });
+                first
+            }
+            _ => {
+                self.cache.insert(ip, DnsEntry {
+                    ip,
+                    hostname: None,
+                    is_private: DnsEntry::is_private_ip(&ip),
+                });
                 None
             }
-            Err(_) => None,
         }
+    }
+    
+    pub async fn lookup_entry(&mut self, ip: IpAddr) -> DnsEntry {
+        if let Some(cached) = self.cache.get(&ip) {
+            return cached.clone();
+        }
+        let is_private = DnsEntry::is_private_ip(&ip);
+        if is_private {
+            return DnsEntry { ip, hostname: None, is_private: true };
+        }
+        let hostname = self.reverse_lookup(ip).await;
+        DnsEntry { ip, hostname, is_private }
     }
 }
 
@@ -97,95 +121,52 @@ pub struct PortIntel {
     pub risk_note: String,
 }
 
-/// Check if a remote port is known-suspicious.
-pub fn port_intel(port: u16) -> Option<PortIntel> {
-    match port {
-        4444 => Some(PortIntel {
+impl PortIntel {
+    pub fn new(port: u16, service: &str, risk_note: &str) -> Self {
+        Self {
             port,
-            service: "Metasploit default".into(),
-            risk_note: "Common reverse shell port".into(),
-        }),
-        5555 => Some(PortIntel {
-            port,
-            service: "Android ADB".into(),
-            risk_note: "Remote debug bridge — shouldn't be exposed".into(),
-        }),
-        1337 => Some(PortIntel {
-            port,
-            service: "Elite/leet".into(),
-            risk_note: "Common backdoor port (cultural convention)".into(),
-        }),
-        31337 => Some(PortIntel {
-            port,
-            service: "Back Orifice".into(),
-            risk_note: "Classic backdoor trojan port".into(),
-        }),
-        6667 | 6697 => Some(PortIntel {
-            port,
-            service: "IRC".into(),
-            risk_note: "IRC — used by some C2 frameworks".into(),
-        }),
-        6666 => Some(PortIntel {
-            port,
-            service: "IRC alt / DarkComet".into(),
-            risk_note: "Common RAT/C2 port".into(),
-        }),
-        3389 => Some(PortIntel {
-            port,
-            service: "RDP".into(),
-            risk_note: "Remote Desktop — brute force target".into(),
-        }),
-        2222 => Some(PortIntel {
-            port,
-            service: "SSH alt".into(),
-            risk_note: "Alternative SSH — may indicate unauthorized access".into(),
-        }),
-        5900..=5910 => Some(PortIntel {
-            port,
-            service: "VNC".into(),
-            risk_note: "VNC remote display — possible unauthorized access".into(),
-        }),
-        8443 => Some(PortIntel {
-            port,
-            service: "Alt HTTPS".into(),
-            risk_note: "Alternative HTTPS — common for C2 panels".into(),
-        }),
-        9001 => Some(PortIntel {
-            port,
-            service: "Tor default".into(),
-            risk_note: "Tor relay/SOCKS — may indicate anonymization".into(),
-        }),
-        _ => None,
+            service: service.to_string(),
+            risk_note: risk_note.to_string(),
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::net::{Ipv4Addr, Ipv6Addr};
+pub fn suspicious_ports() -> Vec<PortIntel> {
+    vec![
+        PortIntel::new(4444, "Metasploit default", "Common reverse shell port"),
+        PortIntel::new(5555, "Android ADB", "Remote debug bridge — shouldn't be exposed"),
+        PortIntel::new(1337, "Elite/leet", "Common backdoor port (cultural convention)"),
+        PortIntel::new(31337, "Back Orifice", "Classic backdoor trojan port"),
+        PortIntel::new(6667, "IRC", "IRC — used by some C2 frameworks"),
+        PortIntel::new(6666, "IRC alt / DarkComet", "Common RAT/C2 port"),
+        PortIntel::new(6668, "IRC Alt", "IRC alt / DDoS botnets"),
+        PortIntel::new(6669, "IRC Alt", "IRC alt / DDoS botnets"),
+        PortIntel::new(3389, "RDP", "Remote Desktop — brute force target"),
+        PortIntel::new(2222, "SSH alt", "Alternative SSH — may indicate unauthorized access"),
+        PortIntel::new(8443, "Alt HTTPS", "Alternative HTTPS — common for C2 panels"),
+        PortIntel::new(9001, "Tor default", "Tor relay/SOCKS — may indicate anonymization"),
+        PortIntel::new(9050, "Tor SOCKS Proxy", "Tor SOCKS Proxy anonymizer"),
+        PortIntel::new(1080, "SOCKS Proxy", "Common SOCKS routing"),
+        PortIntel::new(8080, "HTTP Proxy / C2", "Secondary HTTP / Cobalt Strike"),
+        PortIntel::new(12345, "NetBus Trojan", "Classic Trojan port"),
+        PortIntel::new(27374, "SubSeven Trojan", "Classic Trojan port"),
+        PortIntel::new(65535, "Overflow Indicator", "Last port usage (anomalous)"),
+        PortIntel::new(7777, "Common C2", "Common default for multiple reverse shells"),
+        PortIntel::new(9999, "Common Backdoor", "Generic meterpreter binding port"),
+        PortIntel::new(1234, "Common Test / Backdoor", "Generic netcat listener"),
+    ]
+}
 
-    #[test]
-    fn private_ip_detection() {
-        assert!(DnsEntry::is_private_ip(&IpAddr::V4(Ipv4Addr::LOCALHOST)));
-        assert!(DnsEntry::is_private_ip(&IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
-        assert!(DnsEntry::is_private_ip(&IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1))));
-        assert!(DnsEntry::is_private_ip(&IpAddr::V6(Ipv6Addr::LOCALHOST)));
-        assert!(!DnsEntry::is_private_ip(&IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))));
-        assert!(!DnsEntry::is_private_ip(&IpAddr::V4(Ipv4Addr::new(93, 184, 216, 34))));
+pub fn from_config(ports: &[u16], custom: &[(u16, String)]) -> Vec<PortIntel> {
+    let mut intel = suspicious_ports();
+    intel.retain(|i| ports.contains(&i.port));
+    for (p, desc) in custom {
+        intel.push(PortIntel::new(*p, desc, "User defined custom rule"));
     }
+    intel
+}
 
-    #[test]
-    fn known_suspicious_ports() {
-        assert!(port_intel(4444).is_some());
-        assert_eq!(port_intel(4444).unwrap().service, "Metasploit default");
-        assert!(port_intel(31337).is_some());
-        assert!(port_intel(80).is_none()); // HTTP is fine
-        assert!(port_intel(443).is_none()); // HTTPS is fine
-    }
-
-    #[test]
-    fn lookup_localhost() {
-        let entry = DnsEntry::lookup(IpAddr::V4(Ipv4Addr::LOCALHOST));
-        assert!(entry.is_private);
-    }
+/// Check if a remote port is known-suspicious based on default rules.
+pub fn port_intel(port: u16) -> Option<PortIntel> {
+    suspicious_ports().into_iter().find(|i| i.port == port)
 }

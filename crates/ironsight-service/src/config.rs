@@ -63,16 +63,7 @@ pub struct ThresholdConfig {
     pub auto_response: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ExclusionConfig {
-    /// Process names to exclude from scanning.
-    pub names: Vec<String>,
-    /// Path prefixes to exclude.
-    pub paths: Vec<String>,
-    /// PIDs to exclude.
-    pub pids: Vec<u32>,
-}
+pub use ironsight_response::exclusions::ExclusionConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -143,20 +134,6 @@ impl Default for ThresholdConfig {
     }
 }
 
-impl Default for ExclusionConfig {
-    fn default() -> Self {
-        Self {
-            names: vec![
-                "systemd".into(),
-                "init".into(),
-                "sshd".into(),
-                "dbus-daemon".into(),
-            ],
-            paths: vec!["/usr/lib/systemd/".into(), "/usr/sbin/".into()],
-            pids: vec![1],
-        }
-    }
-}
 
 impl Default for ReportConfig {
     fn default() -> Self {

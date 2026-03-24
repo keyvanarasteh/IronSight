@@ -10,6 +10,6 @@ description = "Memory analysis — pattern scanning, region watching, protection
 ironsight-core.workspace = true
 serde.workspace = true
 regex.workspace = true
-xxhash-rust.workspace = true
+xxhash-rust = { workspace = true, features = ["xxh3"] }
 tracing.workspace = true
 thiserror.workspace = true

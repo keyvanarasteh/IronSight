@@ -7,8 +7,11 @@ use uuid::Uuid;
 /// A complete incident report for a process.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IncidentReport {
+    /// Schema version for SIEM parsing
     pub schema_version: String,
-    pub id: String,
+    /// Unique identifier for this incident report
+    pub id: Uuid,
+    /// When the incident was generated
     pub timestamp: DateTime<Utc>,
     pub hostname: String,
     pub process: ProcessInfo,
@@ -23,7 +26,7 @@ impl IncidentReport {
     pub fn new() -> Self {
         IncidentReport {
             schema_version: "1.0.0".to_string(),
-            id: Uuid::new_v4().to_string(),
+            id: Uuid::new_v4(),
             timestamp: Utc::now(),
             hostname: whoami::fallible::hostname().unwrap_or_else(|_| "Unknown".to_string()),
             process: ProcessInfo::default(),
@@ -38,7 +41,18 @@ impl IncidentReport {
 
 impl Default for IncidentReport {
     fn default() -> Self {
-        Self::new()
+        Self {
+            schema_version: "1.0.0".to_string(),
+            id: Uuid::new_v4(),
+            timestamp: Utc::now(),
+            hostname: whoami::fallible::hostname().unwrap_or_else(|_| "Unknown".to_string()),
+            process: ProcessInfo::default(),
+            threat: ThreatInfo::default(),
+            security: SecurityInfo::default(),
+            network: NetworkInfo::default(),
+            memory: MemoryInfo::default(),
+            actions: Vec::new(),
+        }
     }
 }
 
@@ -55,12 +69,38 @@ pub struct ProcessInfo {
     pub start_time: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ThreatLevel {
+    Clean,
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+impl Default for ThreatLevel {
+    fn default() -> Self { Self::Clean }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RecommendedAction {
+    None,
+    Log,
+    Monitor,
+    Suspend,
+    SuspendDumpKill,
+}
+
+impl Default for RecommendedAction {
+    fn default() -> Self { Self::None }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ThreatInfo {
     pub score: f64,
-    pub level: String,
+    pub level: ThreatLevel,
     pub signals: Vec<SignalInfo>,
-    pub recommended_action: String,
+    pub recommended_action: Box<RecommendedAction>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -106,4 +146,20 @@ pub struct ActionInfo {
     pub success: bool,
     pub message: String,
     pub timestamp: String,
+}
+
+impl From<&ironsight_core::ProcessInfo> for ProcessInfo {
+    fn from(p: &ironsight_core::ProcessInfo) -> Self {
+        ProcessInfo {
+            pid: p.pid,
+            name: p.name.clone(),
+            exe_path: p.exe.as_ref().map(|x| x.to_string_lossy().to_string()),
+            cmdline: if p.cmd.is_empty() { None } else { Some(p.cmd.join(" ")) },
+            parent_pid: p.parent_pid,
+            user: p.uid.map(|x| x.to_string()),
+            cpu_percent: p.cpu_percent,
+            memory_bytes: p.memory_bytes,
+            start_time: None,
+        }
+    }
 }

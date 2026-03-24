@@ -11,3 +11,7 @@ ironsight-core.workspace = true
 serde.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+hickory-resolver = "0.24"
+tokio = { workspace = true }
