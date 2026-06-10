@@ -13,7 +13,7 @@ chrono.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
-regex = "1.10"
+regex = "1.12"
 parking_lot = "0.12.5"
 ironsight-memory = { path = "../ironsight-memory" }
 
